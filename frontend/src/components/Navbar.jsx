@@ -1,12 +1,32 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { LOGO_URL } from "@/lib/api";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Menu, X } from "lucide-react";
+
+const NAV_LINKS = [
+  { to: "/", label: "ACCUEIL", testId: "nav-home" },
+  { to: "/pricing", label: "ABONNEMENTS", testId: "nav-pricing" },
+  { to: "/courses", label: "COURS", testId: "nav-courses" },
+  { to: "/video-analysis", label: "ANALYSE", testId: "nav-analysis" },
+  { to: "/spot-recommender", label: "SPOTS", testId: "nav-spots" },
+  { to: "/meilleurs-spots-kitesurf-weekend", label: "WEEK-END", testId: "nav-weekend", badge: "LIVE" },
+];
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [open, setOpen] = useState(false);
+
+  // Close menu when route changes
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
+  // Lock body scroll when menu open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const handleLogin = () => {
@@ -21,29 +41,30 @@ export default function Navbar() {
       data-testid="navbar"
       className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl ${isLanding ? "bg-black/40" : "bg-black/80"} border-b border-white/10`}
     >
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
         <Link to="/" data-testid="nav-logo" className="flex items-center">
-          <img src={LOGO_URL} alt="RIDEMIND" className="h-12 md:h-14 object-contain" />
+          <img src={LOGO_URL} alt="RIDEMIND" className="h-10 md:h-14 object-contain" />
         </Link>
 
+        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-8 font-display text-sm tracking-wider">
-          <Link to="/" data-testid="nav-home" className="hover:text-[#1E6BFF] transition">ACCUEIL</Link>
-          <Link to="/pricing" data-testid="nav-pricing" className="hover:text-[#1E6BFF] transition">ABONNEMENTS</Link>
-          <Link to="/courses" data-testid="nav-courses" className="hover:text-[#1E6BFF] transition">COURS</Link>
-          <Link to="/video-analysis" data-testid="nav-analysis" className="hover:text-[#1E6BFF] transition">ANALYSE</Link>
-          <Link to="/spot-recommender" data-testid="nav-spots" className="hover:text-[#1E6BFF] transition">SPOTS</Link>
-          <Link to="/meilleurs-spots-kitesurf-weekend" data-testid="nav-weekend" className="hover:text-[#1E6BFF] transition relative">
-            WEEK-END
-            <span className="absolute -top-1.5 -right-3 text-[7px] tracking-widest bg-[#1E6BFF] text-white px-1 py-0.5">LIVE</span>
-          </Link>
+          {NAV_LINKS.map((l) => (
+            <Link key={l.to} to={l.to} data-testid={l.testId} className="hover:text-[#1E6BFF] transition relative">
+              {l.label}
+              {l.badge && (
+                <span className="absolute -top-1.5 -right-3 text-[7px] tracking-widest bg-[#1E6BFF] text-white px-1 py-0.5">{l.badge}</span>
+              )}
+            </Link>
+          ))}
           {user && (
             <Link to="/dashboard" data-testid="nav-dashboard" className="hover:text-[#1E6BFF] transition">DASHBOARD</Link>
           )}
         </nav>
 
-        <div className="flex items-center gap-3">
+        {/* Right actions */}
+        <div className="flex items-center gap-2 md:gap-3">
           {user ? (
-            <div className="flex items-center gap-3">
+            <>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#0A0A0A] border border-[#262626]">
                 {user.picture ? (
                   <img src={user.picture} alt={user.name} className="h-6 w-6 rounded-full" />
@@ -65,17 +86,66 @@ export default function Navbar() {
               >
                 <LogOut className="h-5 w-5" />
               </button>
-            </div>
+            </>
           ) : (
             <button
               data-testid="login-btn"
               onClick={handleLogin}
-              className="bg-[#1E6BFF] text-white px-5 py-2.5 font-display tracking-wider hover:bg-[#1751C4] transition"
+              className="hidden sm:block bg-[#1E6BFF] text-white px-4 md:px-5 py-2.5 font-display text-sm tracking-wider hover:bg-[#1751C4] transition"
             >
               CONNEXION
             </button>
           )}
+
+          {/* Hamburger (mobile only) */}
+          <button
+            data-testid="nav-toggle"
+            onClick={() => setOpen((o) => !o)}
+            className="md:hidden p-2 hover:bg-[#1E6BFF]/10 transition border border-[#262626]"
+            aria-label="Menu"
+            aria-expanded={open}
+          >
+            {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
+      </div>
+
+      {/* Mobile menu (slide-down) */}
+      <div
+        data-testid="nav-mobile-menu"
+        className={`md:hidden bg-black border-t border-[#262626] overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
+          open ? "max-h-[calc(100vh-80px)] opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <nav className="px-6 py-4 flex flex-col font-display tracking-wider">
+          {NAV_LINKS.map((l) => (
+            <Link
+              key={l.to}
+              to={l.to}
+              data-testid={`mobile-${l.testId}`}
+              className="py-3 border-b border-[#1a1a1a] text-lg hover:text-[#1E6BFF] transition flex items-center justify-between"
+            >
+              <span>{l.label}</span>
+              {l.badge && (
+                <span className="text-[9px] tracking-widest bg-[#1E6BFF] text-white px-1.5 py-0.5">{l.badge}</span>
+              )}
+            </Link>
+          ))}
+          {user && (
+            <Link to="/dashboard" data-testid="mobile-nav-dashboard" className="py-3 border-b border-[#1a1a1a] text-lg hover:text-[#1E6BFF] transition">
+              DASHBOARD
+            </Link>
+          )}
+          {!user && (
+            <button
+              data-testid="mobile-login-btn"
+              onClick={handleLogin}
+              className="mt-4 bg-[#1E6BFF] text-white px-5 py-3 font-display tracking-wider hover:bg-[#1751C4] transition"
+            >
+              CONNEXION
+            </button>
+          )}
+        </nav>
       </div>
     </header>
   );
