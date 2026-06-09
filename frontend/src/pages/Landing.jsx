@@ -4,11 +4,17 @@ import { ArrowRight, Wind, Video, MapPin, Sparkles, Activity, Target } from "luc
 import { useAuth } from "@/context/AuthContext";
 
 const HERO_IMAGES = [
-  { url: "https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "KITESURF", available: true },
-  { url: "https://images.unsplash.com/photo-1666032234128-abc3e45bd1dc?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKEBOARD", available: false },
-  { url: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "SURF", available: false },
-  { url: "https://images.unsplash.com/photo-1752170053218-5f05ccfbee4e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKE CABLE", available: false },
-  { url: "https://images.unsplash.com/photo-1672699303810-0b55ddad76b5?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "FOIL", available: false },
+  { urls: ["https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?fm=jpg&q=85&w=2000&auto=format&fit=crop"], label: "KITESURF", available: true },
+  {
+    urls: [
+      "https://images.unsplash.com/photo-1666032234128-abc3e45bd1dc?fm=jpg&q=85&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1752170053218-5f05ccfbee4e?fm=jpg&q=85&w=1200&auto=format&fit=crop",
+    ],
+    label: "WAKE BOAT / CABLE",
+    available: false,
+  },
+  { urls: ["https://images.unsplash.com/photo-1502680390469-be75c86b636f?fm=jpg&q=85&w=2000&auto=format&fit=crop"], label: "SURF", available: false },
+  { urls: ["https://images.unsplash.com/photo-1672699303810-0b55ddad76b5?fm=jpg&q=85&w=2000&auto=format&fit=crop"], label: "FOIL", available: false },
 ];
 const VIDEO_IMG = "https://images.unsplash.com/photo-1601900957092-ae3e67b47b03?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
 const COURSE_IMG = "https://images.unsplash.com/photo-1578060124065-41f863eb9ebe?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
@@ -44,15 +50,34 @@ export default function Landing() {
         {/* Slideshow layers with crossfade */}
         {HERO_IMAGES.map((img, i) => (
           <div
-            key={img.url}
-            className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out"
-            style={{
-              backgroundImage: `url(${img.url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              opacity: slide === i ? 1 : 0,
-            }}
-          />
+            key={img.label}
+            className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out flex"
+            style={{ opacity: slide === i ? 1 : 0 }}
+          >
+            {img.urls.map((u, idx) => (
+              <div
+                key={u}
+                className="relative h-full"
+                style={{
+                  flex: 1,
+                  backgroundImage: `url(${u})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                {img.urls.length > 1 && (
+                  <div className="absolute bottom-8 left-6 z-10 hidden md:block">
+                    <span className="font-display text-xs tracking-[0.3em] text-white/80 bg-black/40 px-2 py-1 border border-white/20">
+                      {idx === 0 ? "BOAT" : "CABLE PARK"}
+                    </span>
+                  </div>
+                )}
+                {img.urls.length > 1 && idx === 0 && (
+                  <div className="absolute right-0 top-0 bottom-0 w-px bg-white/30" />
+                )}
+              </div>
+            ))}
+          </div>
         ))}
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
         <div className="absolute inset-0 diagonal-stripe opacity-40" />
