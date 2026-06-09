@@ -376,8 +376,12 @@ async def video_analysis(
         '  "securite": "1 phrase de conseil sécurité pertinent",\n'
         '  "niveau_estime": "Débutant | Intermédiaire | Avancé | Pro - selon ce que tu lis"\n'
         "}\n\n"
-        "Écris en français, sois technique mais bienveillant, utilise le vocabulaire du sport concerné. "
-        "Ne mets aucun texte avant ou après le JSON."
+        "REGLES DE STYLE STRICTES dans tous les champs texte :\n"
+        "- Écris en français, ton technique mais bienveillant.\n"
+        "- AUCUN caractère markdown : pas de #, pas de *, pas de **, pas de _, pas de backticks, pas de tirets de liste en début de ligne.\n"
+        "- Pas de titres, pas de mise en gras, pas d'italique. Juste du texte courant lisible.\n"
+        "- Pas d'emojis.\n"
+        "- Phrases complètes et naturelles, comme à l'oral d'un coach pro."
     )
 
     session_id = f"va_{uuid.uuid4().hex}"
@@ -420,6 +424,9 @@ async def video_analysis(
             "securite": "",
             "niveau_estime": level,
         }
+
+    # Defensive: strip any markdown that slipped through
+    structured = clean_structured(structured)
 
     record = {
         "analysis_id": f"an_{uuid.uuid4().hex[:12]}",
@@ -486,6 +493,42 @@ def haversine_km(lat1, lon1, lat2, lon2):
     dlamb = radians(lon2 - lon1)
     a = sin(dphi/2)**2 + cos(phi1) * cos(phi2) * sin(dlamb/2)**2
     return 2 * r * atan2(sqrt(a), sqrt(1 - a))
+
+
+_MD_PATTERNS = [
+    (__import__("re").compile(r"```[a-zA-Z]*\n?"), ""),     # code fences
+    (__import__("re").compile(r"`([^`]+)`"), r"\1"),         # inline code
+    (__import__("re").compile(r"\*\*([^*]+)\*\*"), r"\1"),  # bold
+    (__import__("re").compile(r"__([^_]+)__"), r"\1"),       # bold underscore
+    (__import__("re").compile(r"(?<!\*)\*([^*\n]+)\*(?!\*)"), r"\1"),  # italic *...*
+    (__import__("re").compile(r"(?<!_)_([^_\n]+)_(?!_)"), r"\1"),       # italic _..._
+    (__import__("re").compile(r"^\s*#{1,6}\s+", __import__("re").MULTILINE), ""),  # headings
+    (__import__("re").compile(r"^\s*[-*+]\s+", __import__("re").MULTILINE), ""),    # list bullets
+    (__import__("re").compile(r"^\s*\d+\.\s+", __import__("re").MULTILINE), ""),    # numbered lists
+    (__import__("re").compile(r"^>\s+", __import__("re").MULTILINE), ""),           # blockquotes
+]
+
+def strip_markdown(text: str) -> str:
+    """Strip common markdown characters so the AI text reads as plain prose."""
+    if not isinstance(text, str):
+        return text
+    out = text
+    for pat, repl in _MD_PATTERNS:
+        out = pat.sub(repl, out)
+    # Collapse 3+ newlines
+    out = __import__("re").sub(r"\n{3,}", "\n\n", out)
+    return out.strip()
+
+
+def clean_structured(obj):
+    """Apply strip_markdown recursively to all string values in a dict/list."""
+    if isinstance(obj, str):
+        return strip_markdown(obj)
+    if isinstance(obj, dict):
+        return {k: clean_structured(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [clean_structured(x) for x in obj]
+    return obj
 
 @api.get("/spots/weather")
 async def spots_weather():
@@ -581,7 +624,7 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
     chat = LlmChat(
         api_key=os.environ["EMERGENT_LLM_KEY"],
         session_id=f"sr_{uuid.uuid4().hex}",
-        system_message="Tu es un expert en spots de kitesurf. Donne en français un conseil concis (3-5 phrases) sur le meilleur spot pour le rider donné, en justifiant techniquement (vent, niveau, sécurité, matériel).",
+        system_message="Tu es un expert en spots de kitesurf. Donne en français un conseil concis (3-5 phrases) sur le meilleur spot pour le rider donné, en justifiant techniquement (vent, niveau, sécurité, matériel). REGLES DE STYLE: texte courant uniquement, aucun caractère markdown (pas de #, pas de *, pas de **, pas de _, pas de backticks, pas de tirets de liste), pas de titres, pas de gras, pas d'italique, pas d'emojis. Juste des phrases naturelles, fluides, comme à l'oral.",
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
     if not top3:
         return {"top_spots": [], "ai_advice": "Pas de spot ventilé dans ce rayon. Essaie un autre jour ou élargis ta zone.", "requested": req.model_dump()}
@@ -596,6 +639,8 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
         ai_comment = await chat.send_message(UserMessage(text=user_msg))
     except Exception:
         ai_comment = "Conseil IA indisponible pour le moment."
+
+    ai_comment = strip_markdown(ai_comment)
 
     return {"top_spots": top3, "ai_advice": ai_comment, "requested": req.model_dump()}
 
