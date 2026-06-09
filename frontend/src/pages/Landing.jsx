@@ -14,7 +14,6 @@ const HERO_IMAGES = [
     available: false,
   },
   { urls: ["https://images.unsplash.com/photo-1502680390469-be75c86b636f?fm=jpg&q=85&w=2000&auto=format&fit=crop"], label: "SURF", available: false },
-  { urls: ["https://images.unsplash.com/photo-1615840956750-3262c5fffb62?fm=jpg&q=85&w=2000&auto=format&fit=crop"], label: "FOIL", available: false },
 ];
 const VIDEO_IMG = "https://images.unsplash.com/photo-1601900957092-ae3e67b47b03?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
 const COURSE_IMG = "https://images.unsplash.com/photo-1578060124065-41f863eb9ebe?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
