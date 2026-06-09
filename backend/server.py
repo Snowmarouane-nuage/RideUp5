@@ -66,6 +66,9 @@ class SpotRecommendRequest(BaseModel):
     level: str  # beginner | intermediate | advanced | pro
     wind_kts: float
     sport: str = "kitesurf"
+    user_lat: Optional[float] = None
+    user_lon: Optional[float] = None
+    max_distance_km: Optional[float] = None  # None = no filter
 
 class QuestionPayload(BaseModel):
     question: str
@@ -357,12 +360,24 @@ async def video_analysis(
     system_prompt = (
         "Tu es RIDEMIND COACH, un coach mondial de sports de glisse (kitesurf, wakeboard, foil, surf). "
         "Tu reçois la description d'une session ou d'une figure et tu dois fournir une analyse "
-        "technique PRÉCISE et structurée en français. Format obligatoire :\n"
-        "1. **Diagnostic** : ce que tu interprètes de la situation décrite.\n"
-        "2. **Points techniques à corriger** : 3-5 axes concrets (posture, edging, kite position, timing, regard...).\n"
-        "3. **Drills d'entraînement** : 2-3 exercices progressifs pour s'améliorer.\n"
-        "4. **Conseil sécurité** : un rappel pertinent.\n\n"
-        "Sois technique, encourageant, et utilise le vocabulaire du sport concerné."
+        "technique précise et structurée. Tu DOIS répondre uniquement avec un objet JSON valide "
+        "(pas de markdown, pas de ```json, juste l'objet), respectant strictement ce schéma :\n"
+        "{\n"
+        '  "headline": "phrase courte qui résume ta lecture de la session (max 12 mots)",\n'
+        '  "diagnostic": "2-3 phrases d\'analyse de la situation décrite",\n'
+        '  "corrections": [\n'
+        '    {"titre": "titre court", "detail": "1-2 phrases d\'explication concrète"},\n'
+        '    ... (3 à 5 items)\n'
+        '  ],\n'
+        '  "drills": [\n'
+        '    {"nom": "nom du drill", "description": "comment l\'exécuter, 1-2 phrases"},\n'
+        '    ... (2 à 3 items progressifs)\n'
+        '  ],\n'
+        '  "securite": "1 phrase de conseil sécurité pertinent",\n'
+        '  "niveau_estime": "Débutant | Intermédiaire | Avancé | Pro - selon ce que tu lis"\n'
+        "}\n\n"
+        "Écris en français, sois technique mais bienveillant, utilise le vocabulaire du sport concerné. "
+        "Ne mets aucun texte avant ou après le JSON."
     )
 
     session_id = f"va_{uuid.uuid4().hex}"
@@ -385,6 +400,27 @@ async def video_analysis(
         logger.exception("LLM error")
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {e}")
 
+    # Parse JSON response (strip markdown fences if present)
+    import json as _json
+    cleaned = ai_response.strip()
+    if cleaned.startswith("```"):
+        # remove leading fence and language tag
+        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
+        if cleaned.rstrip().endswith("```"):
+            cleaned = cleaned.rstrip()[:-3]
+    try:
+        structured = _json.loads(cleaned)
+    except Exception:
+        # Fallback: return as plain text in a single field
+        structured = {
+            "headline": "Analyse de ta session",
+            "diagnostic": ai_response,
+            "corrections": [],
+            "drills": [],
+            "securite": "",
+            "niveau_estime": level,
+        }
+
     record = {
         "analysis_id": f"an_{uuid.uuid4().hex[:12]}",
         "user_id": user["user_id"],
@@ -392,7 +428,8 @@ async def video_analysis(
         "level": level,
         "description": description,
         "video_filename": video_filename,
-        "feedback": ai_response,
+        "feedback": ai_response,  # keep raw for backwards compat
+        "structured": structured,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.video_analyses.insert_one(record)
@@ -411,13 +448,44 @@ async def video_history(request: Request):
 # SPOT RECOMMENDER (Premium) - Open-Meteo + AI
 # ============================================================
 SPOTS = [
-    {"name": "Tarifa, Espagne", "lat": 36.0143, "lon": -5.6044, "best_wind_dir": "Levante/Poniente", "ideal_kts": [18, 30], "level": "intermediate", "type": "flat-chop"},
-    {"name": "Dakhla, Maroc", "lat": 23.7136, "lon": -15.9355, "best_wind_dir": "NE", "ideal_kts": [15, 25], "level": "beginner", "type": "flat"},
-    {"name": "Le Morne, Maurice", "lat": -20.4540, "lon": 57.3127, "best_wind_dir": "SE", "ideal_kts": [16, 28], "level": "advanced", "type": "wave-flat"},
+    # France
     {"name": "Leucate, France", "lat": 42.9171, "lon": 3.0322, "best_wind_dir": "Tramontane", "ideal_kts": [18, 35], "level": "intermediate", "type": "chop"},
+    {"name": "Beauduc, France", "lat": 43.3667, "lon": 4.5667, "best_wind_dir": "Mistral", "ideal_kts": [18, 30], "level": "intermediate", "type": "flat"},
+    {"name": "Almanarre (Hyères), France", "lat": 43.0913, "lon": 6.1392, "best_wind_dir": "Mistral/Est", "ideal_kts": [15, 30], "level": "beginner", "type": "flat-chop"},
+    {"name": "La Tranche-sur-Mer, France", "lat": 46.3439, "lon": -1.4256, "best_wind_dir": "O/SO", "ideal_kts": [15, 28], "level": "beginner", "type": "flat-chop"},
+    {"name": "Wissant, France", "lat": 50.8867, "lon": 1.6592, "best_wind_dir": "O/SO", "ideal_kts": [18, 32], "level": "intermediate", "type": "chop-wave"},
+    {"name": "Quiberon, France", "lat": 47.4830, "lon": -3.1188, "best_wind_dir": "O/NO", "ideal_kts": [16, 30], "level": "intermediate", "type": "flat-chop"},
+    {"name": "Le Crotoy, France", "lat": 50.2186, "lon": 1.6206, "best_wind_dir": "O/SO", "ideal_kts": [16, 30], "level": "beginner", "type": "flat"},
+    # Spain
+    {"name": "Tarifa, Espagne", "lat": 36.0143, "lon": -5.6044, "best_wind_dir": "Levante/Poniente", "ideal_kts": [18, 30], "level": "intermediate", "type": "flat-chop"},
+    {"name": "Roses, Espagne", "lat": 42.2625, "lon": 3.1764, "best_wind_dir": "Tramontane", "ideal_kts": [18, 32], "level": "intermediate", "type": "chop"},
+    # Italy / Sicily
+    {"name": "Lo Stagnone, Sicile", "lat": 37.8675, "lon": 12.4500, "best_wind_dir": "O/NO/SO", "ideal_kts": [13, 25], "level": "beginner", "type": "flat"},
+    # Portugal
+    {"name": "Guincho, Portugal", "lat": 38.7325, "lon": -9.4744, "best_wind_dir": "N/NO", "ideal_kts": [18, 35], "level": "advanced", "type": "wave"},
+    {"name": "Lagoa de Albufeira, Portugal", "lat": 38.4747, "lon": -9.1808, "best_wind_dir": "N", "ideal_kts": [15, 28], "level": "beginner", "type": "flat-chop"},
+    # Netherlands
+    {"name": "Workum (Ijsselmeer), Pays-Bas", "lat": 52.9750, "lon": 5.4422, "best_wind_dir": "O/SO", "ideal_kts": [14, 28], "level": "beginner", "type": "flat"},
+    # Germany
+    {"name": "Fehmarn, Allemagne", "lat": 54.4350, "lon": 11.1850, "best_wind_dir": "O/SO/NO", "ideal_kts": [15, 30], "level": "intermediate", "type": "chop"},
+    # Maroc
+    {"name": "Dakhla, Maroc", "lat": 23.7136, "lon": -15.9355, "best_wind_dir": "NE", "ideal_kts": [15, 25], "level": "beginner", "type": "flat"},
+    {"name": "Essaouira, Maroc", "lat": 31.5085, "lon": -9.7595, "best_wind_dir": "N/NE", "ideal_kts": [18, 35], "level": "intermediate", "type": "chop-wave"},
+    # Far destinations
+    {"name": "Le Morne, Maurice", "lat": -20.4540, "lon": 57.3127, "best_wind_dir": "SE", "ideal_kts": [16, 28], "level": "advanced", "type": "wave-flat"},
     {"name": "Cumbuco, Brésil", "lat": -3.6258, "lon": -38.7253, "best_wind_dir": "E", "ideal_kts": [16, 26], "level": "beginner", "type": "flat"},
     {"name": "Hood River, USA", "lat": 45.7054, "lon": -121.5215, "best_wind_dir": "W", "ideal_kts": [20, 32], "level": "advanced", "type": "river-chop"},
 ]
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    """Great-circle distance in km."""
+    from math import radians, sin, cos, atan2, sqrt
+    r = 6371.0
+    phi1, phi2 = radians(lat1), radians(lat2)
+    dphi = radians(lat2 - lat1)
+    dlamb = radians(lon2 - lon1)
+    a = sin(dphi/2)**2 + cos(phi1) * cos(phi2) * sin(dlamb/2)**2
+    return 2 * r * atan2(sqrt(a), sqrt(1 - a))
 
 @api.get("/spots/weather")
 async def spots_weather():
@@ -446,10 +514,24 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
     if user.get("plan") != "premium":
         raise HTTPException(status_code=403, detail="Premium plan required")
 
-    # Fetch live wind for all spots
+    # Filter spots by distance if user location provided
+    candidate_spots = SPOTS
+    if req.user_lat is not None and req.user_lon is not None:
+        with_dist = [
+            {**s, "distance_km": round(haversine_km(req.user_lat, req.user_lon, s["lat"], s["lon"]), 1)}
+            for s in SPOTS
+        ]
+        if req.max_distance_km:
+            with_dist = [s for s in with_dist if s["distance_km"] <= req.max_distance_km]
+        candidate_spots = with_dist
+
+    if not candidate_spots:
+        return {"top_spots": [], "ai_advice": "Aucun spot trouvé dans ce rayon. Augmente la distance pour découvrir d'autres options.", "requested": req.model_dump()}
+
+    # Fetch live wind for filtered spots
     spots = []
     async with httpx.AsyncClient(timeout=10.0) as hc:
-        for s in SPOTS:
+        for s in candidate_spots:
             try:
                 r = await hc.get(
                     "https://api.open-meteo.com/v1/forecast",
@@ -475,20 +557,21 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
         ideal_min, ideal_max = s["ideal_kts"]
         in_range = ideal_min <= wind <= ideal_max
         spot_lvl = level_rank.get(s["level"], 2)
-        # Safety: spot level must not exceed user level by >1
         safety_ok = spot_lvl <= user_lvl + 1
         score = 0
         if in_range:
             score += 50
         else:
-            # closer to range = better
             dist = min(abs(wind - ideal_min), abs(wind - ideal_max))
             score += max(0, 30 - dist * 2)
         if safety_ok:
             score += 30
         if spot_lvl == user_lvl:
             score += 20
-        scored.append({**s, "score": score, "in_ideal_range": in_range, "safety_ok": safety_ok})
+        # Bonus for closer spots when user location known
+        if "distance_km" in s and req.max_distance_km:
+            score += max(0, 10 - (s["distance_km"] / req.max_distance_km) * 10)
+        scored.append({**s, "score": round(score, 1), "in_ideal_range": in_range, "safety_ok": safety_ok})
 
     scored.sort(key=lambda x: x["score"], reverse=True)
     top3 = scored[:3]
@@ -500,10 +583,13 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
         session_id=f"sr_{uuid.uuid4().hex}",
         system_message="Tu es un expert en spots de kitesurf. Donne en français un conseil concis (3-5 phrases) sur le meilleur spot pour le rider donné, en justifiant techniquement (vent, niveau, sécurité, matériel).",
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+    if not top3:
+        return {"top_spots": [], "ai_advice": "Pas de spot ventilé dans ce rayon. Essaie un autre jour ou élargis ta zone.", "requested": req.model_dump()}
+    dist_info = f", à {top3[0]['distance_km']} km" if "distance_km" in top3[0] else ""
     user_msg = (
         f"Rider: {req.weight_kg} kg, niveau {req.level}, kite {req.kite_size}m, "
         f"board {req.board_size} cm, sport {req.sport}.\n"
-        f"Top spot proposé: {top3[0]['name']} avec vent actuel {top3[0]['wind_kts_now']} kts (idéal {top3[0]['ideal_kts'][0]}-{top3[0]['ideal_kts'][1]} kts, type {top3[0]['type']}).\n"
+        f"Top spot proposé: {top3[0]['name']}{dist_info} avec vent actuel {top3[0]['wind_kts_now']} kts (idéal {top3[0]['ideal_kts'][0]}-{top3[0]['ideal_kts'][1]} kts, type {top3[0]['type']}).\n"
         "Donne ton verdict et une recommandation matériel/sécurité."
     )
     try:
