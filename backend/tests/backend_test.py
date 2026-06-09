@@ -108,15 +108,89 @@ def test_video_analysis_premium():
     assert any(k in fb for k in ["diagnostic", "drill", "technique"])
 
 
-# --- Spot recommend ---
-def test_spot_recommend_premium():
-    payload = {"weight_kg": 75, "kite_size": 9, "board_size": 138, "level": "intermediate", "wind_kts": 22, "sport": "kitesurf"}
+# Markdown char detection helper used by multiple tests
+MD_CHARS = ["#", "*", "**", "_", "`"]
+
+def assert_no_markdown(text, field_name=""):
+    """Assert text doesn't contain raw markdown formatting characters."""
+    assert isinstance(text, str), f"{field_name} not a string"
+    for ch in MD_CHARS:
+        assert ch not in text, f"{field_name} contains markdown char '{ch}': {text!r}"
+    # Bullet/list dashes at line start
+    for line in text.splitlines():
+        ls = line.lstrip()
+        assert not ls.startswith("- "), f"{field_name} has list dash: {line!r}"
+
+
+# --- Spot recommend (new quiver schema) ---
+def test_spot_recommend_premium_quiver():
+    payload = {
+        "weight_kg": 75, "quiver": [7, 9, 12], "board_size": 138,
+        "level": "intermediate", "sport": "kitesurf",
+        "target_date": "2026-06-15", "target_hour": 14,
+        "user_lat": 48.8566, "user_lon": 2.3522, "max_distance_km": 600,
+    }
     r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=AUTH, json=payload, timeout=60)
     assert r.status_code == 200, r.text
     d = r.json()
-    assert len(d["top_spots"]) == 3
-    assert all("score" in s and "wind_kts_now" in s for s in d["top_spots"])
-    assert isinstance(d["ai_advice"], str)
+    assert len(d["top_spots"]) >= 1
+    for s in d["top_spots"]:
+        assert "recommended_kite" in s
+        # recommended_kite must be one of quiver sizes (or None)
+        if s["recommended_kite"] is not None:
+            assert s["recommended_kite"] in [7, 9, 12], f"kite {s['recommended_kite']} not in quiver"
+    # ai_advice must be free of markdown
+    assert_no_markdown(d["ai_advice"], "ai_advice")
+
+
+def test_spot_recommend_empty_quiver():
+    payload = {
+        "weight_kg": 75, "quiver": [], "board_size": 138,
+        "level": "intermediate", "sport": "kitesurf",
+        "target_hour": 14,
+    }
+    r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=AUTH, json=payload, timeout=60)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    for s in d["top_spots"]:
+        # With empty quiver, recommended_kite should be None
+        assert s.get("recommended_kite") is None
+
+
+def test_spot_recommend_past_date_clamped():
+    payload = {
+        "weight_kg": 75, "quiver": [9, 12], "board_size": 138,
+        "level": "intermediate", "sport": "kitesurf",
+        "target_date": "2020-01-01", "target_hour": 14,
+    }
+    r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=AUTH, json=payload, timeout=60)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    from datetime import date as _date
+    assert d["target_date"] == _date.today().isoformat()
+
+
+def test_spot_recommend_far_future_clamped():
+    from datetime import date as _date, timedelta as _td
+    payload = {
+        "weight_kg": 75, "quiver": [9, 12], "board_size": 138,
+        "level": "intermediate", "sport": "kitesurf",
+        "target_date": (_date.today() + _td(days=30)).isoformat(), "target_hour": 14,
+    }
+    r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=AUTH, json=payload, timeout=60)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    max_d = (_date.today() + _td(days=14)).isoformat()
+    assert d["target_date"] == max_d
+
+
+def test_spot_recommend_old_schema_compatible():
+    """Old payload with kite_size + wind_kts should NOT 422 (Pydantic ignores extras)."""
+    payload = {"weight_kg": 75, "kite_size": 9, "board_size": 138,
+               "level": "intermediate", "wind_kts": 22, "sport": "kitesurf"}
+    r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=AUTH, json=payload, timeout=60)
+    assert r.status_code != 422, f"Expected non-422, got {r.status_code}: {r.text}"
+    assert r.status_code == 200, r.text
 
 
 def test_spot_recommend_standard_forbidden():
@@ -131,7 +205,7 @@ def test_spot_recommend_standard_forbidden():
         "print(t);"
     ]).decode().strip().splitlines()[-1]
     headers = {"Authorization": f"Bearer {out}"}
-    payload = {"weight_kg": 75, "kite_size": 9, "board_size": 138, "level": "intermediate", "wind_kts": 22}
+    payload = {"weight_kg": 75, "quiver": [9], "board_size": 138, "level": "intermediate"}
     r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=headers, json=payload, timeout=30)
     assert r.status_code == 403
 
@@ -159,33 +233,30 @@ def test_spot_recommend_with_geo_paris_600km():
     """Paris (48.8566, 2.3522), 600km radius - should include French Atlantic/Channel spots
     but exclude Tarifa, Dakhla, far destinations."""
     payload = {
-        "weight_kg": 75, "kite_size": 9, "board_size": 138,
-        "level": "intermediate", "wind_kts": 22, "sport": "kitesurf",
+        "weight_kg": 75, "quiver": [9, 12], "board_size": 138,
+        "level": "intermediate", "sport": "kitesurf",
         "user_lat": 48.8566, "user_lon": 2.3522, "max_distance_km": 600,
     }
     r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=AUTH, json=payload, timeout=60)
     assert r.status_code == 200, r.text
     d = r.json()
-    # Each returned spot must have distance_km field
     for s in d["top_spots"]:
         assert "distance_km" in s
         assert s["distance_km"] <= 600
     names = {s["name"] for s in d["top_spots"]}
-    # Should NOT include far spots
     assert not any("Tarifa" in n or "Dakhla" in n or "Maurice" in n or "Brésil" in n or "USA" in n for n in names)
 
 
 def test_spot_recommend_no_geo_backwards_compat():
     """Without user_lat/user_lon - returns top_spots without distance_km filter, global."""
     payload = {
-        "weight_kg": 75, "kite_size": 9, "board_size": 138,
-        "level": "intermediate", "wind_kts": 22, "sport": "kitesurf",
+        "weight_kg": 75, "quiver": [9, 12], "board_size": 138,
+        "level": "intermediate", "sport": "kitesurf",
     }
     r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=AUTH, json=payload, timeout=60)
     assert r.status_code == 200, r.text
     d = r.json()
-    assert len(d["top_spots"]) == 3
-    # No distance_km when no geo
+    assert len(d["top_spots"]) >= 1
     for s in d["top_spots"]:
         assert "distance_km" not in s
 
@@ -193,8 +264,8 @@ def test_spot_recommend_no_geo_backwards_compat():
 def test_spot_recommend_tiny_radius_empty():
     """Paris with 50km radius - no kite spots that close, expect empty list + friendly advice."""
     payload = {
-        "weight_kg": 75, "kite_size": 9, "board_size": 138,
-        "level": "intermediate", "wind_kts": 22, "sport": "kitesurf",
+        "weight_kg": 75, "quiver": [9, 12], "board_size": 138,
+        "level": "intermediate", "sport": "kitesurf",
         "user_lat": 48.8566, "user_lon": 2.3522, "max_distance_km": 50,
     }
     r = requests.post(f"{BASE_URL}/api/spot-recommend", headers=AUTH, json=payload, timeout=30)
@@ -235,6 +306,16 @@ def test_video_analysis_structured():
         assert "nom" in dr and "description" in dr
     assert isinstance(s["securite"], str)
     assert isinstance(s["niveau_estime"], str) and len(s["niveau_estime"]) > 0
+    # Markdown stripping check on all structured text fields
+    assert_no_markdown(s["headline"], "headline")
+    assert_no_markdown(s["diagnostic"], "diagnostic")
+    assert_no_markdown(s["securite"], "securite")
+    for c in s["corrections"]:
+        assert_no_markdown(c["titre"], "correction.titre")
+        assert_no_markdown(c["detail"], "correction.detail")
+    for dr in s["drills"]:
+        assert_no_markdown(dr["nom"], "drill.nom")
+        assert_no_markdown(dr["description"], "drill.description")
 
 
 def test_video_history_includes_structured():

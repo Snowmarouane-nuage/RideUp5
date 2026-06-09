@@ -61,14 +61,15 @@ class VideoAnalysisRequest(BaseModel):
 
 class SpotRecommendRequest(BaseModel):
     weight_kg: float
-    kite_size: float
+    quiver: List[float] = []  # list of kite sizes the rider owns (m²)
     board_size: float
     level: str  # beginner | intermediate | advanced | pro
-    wind_kts: float
     sport: str = "kitesurf"
     user_lat: Optional[float] = None
     user_lon: Optional[float] = None
-    max_distance_km: Optional[float] = None  # None = no filter
+    max_distance_km: Optional[float] = None
+    target_date: Optional[str] = None  # YYYY-MM-DD; None = today
+    target_hour: int = 14  # 0-23 local time; default afternoon
 
 class QuestionPayload(BaseModel):
     question: str
@@ -557,6 +558,22 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
     if user.get("plan") != "premium":
         raise HTTPException(status_code=403, detail="Premium plan required")
 
+    from datetime import date as _date
+
+    # Resolve target date (default = today)
+    today = _date.today()
+    try:
+        target_date = _date.fromisoformat(req.target_date) if req.target_date else today
+    except Exception:
+        target_date = today
+    # Open-Meteo gives up to 16 days forecast; clamp to +14 days
+    max_date = today + timedelta(days=14)
+    if target_date < today:
+        target_date = today
+    if target_date > max_date:
+        target_date = max_date
+    target_hour = max(0, min(23, int(req.target_hour)))
+
     # Filter spots by distance if user location provided
     candidate_spots = SPOTS
     if req.user_lat is not None and req.user_lon is not None:
@@ -569,25 +586,42 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
         candidate_spots = with_dist
 
     if not candidate_spots:
-        return {"top_spots": [], "ai_advice": "Aucun spot trouvé dans ce rayon. Augmente la distance pour découvrir d'autres options.", "requested": req.model_dump()}
+        return {"top_spots": [], "ai_advice": "Aucun spot trouvé dans ce rayon. Augmente la distance pour découvrir d'autres options.", "requested": req.model_dump(), "target_date": target_date.isoformat(), "target_hour": target_hour}
 
-    # Fetch live wind for filtered spots
+    # Fetch forecast wind for the target date+hour for each spot
     spots = []
-    async with httpx.AsyncClient(timeout=10.0) as hc:
+    async with httpx.AsyncClient(timeout=15.0) as hc:
         for s in candidate_spots:
             try:
                 r = await hc.get(
                     "https://api.open-meteo.com/v1/forecast",
                     params={
                         "latitude": s["lat"], "longitude": s["lon"],
-                        "current": "wind_speed_10m,wind_direction_10m",
+                        "hourly": "wind_speed_10m,wind_direction_10m",
                         "wind_speed_unit": "kn",
+                        "start_date": target_date.isoformat(),
+                        "end_date": target_date.isoformat(),
+                        "timezone": "auto",
                     },
                 )
-                d = r.json().get("current", {})
-                spots.append({**s, "wind_kts_now": d.get("wind_speed_10m"), "wind_dir_now": d.get("wind_direction_10m")})
+                d = r.json().get("hourly", {})
+                speeds = d.get("wind_speed_10m") or []
+                dirs = d.get("wind_direction_10m") or []
+                wind_at_hour = speeds[target_hour] if target_hour < len(speeds) else None
+                dir_at_hour = dirs[target_hour] if target_hour < len(dirs) else None
+                spots.append({**s, "wind_kts_now": wind_at_hour, "wind_dir_now": dir_at_hour})
             except Exception:
                 spots.append({**s, "wind_kts_now": None, "wind_dir_now": None})
+
+    # Compute best matching kite from quiver for a given wind speed
+    def best_kite(quiver, wind_kts, weight_kg):
+        if not quiver or wind_kts is None:
+            return None
+        # Heuristic: ideal kite size ≈ 600 / wind_kts (adjusted by weight: heavier rider => bigger kite)
+        weight_factor = weight_kg / 75.0
+        ideal = (600 / max(8, wind_kts)) * weight_factor
+        # Pick closest size in quiver
+        return min(quiver, key=lambda k: abs(k - ideal))
 
     # Score each spot
     level_rank = {"beginner": 1, "intermediate": 2, "advanced": 3, "pro": 4}
@@ -601,20 +635,34 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
         in_range = ideal_min <= wind <= ideal_max
         spot_lvl = level_rank.get(s["level"], 2)
         safety_ok = spot_lvl <= user_lvl + 1
+        # Quiver coverage: can the rider's quiver handle this wind? (rough: 600/wind in [min_quiver - 2, max_quiver + 2])
+        kite_pick = best_kite(req.quiver, wind, req.weight_kg)
+        quiver_ok = True
+        if req.quiver and kite_pick is not None:
+            ideal_size = (600 / max(8, wind)) * (req.weight_kg / 75.0)
+            quiver_ok = abs(kite_pick - ideal_size) <= 3  # within 3m² is fine
         score = 0
         if in_range:
             score += 50
         else:
-            dist = min(abs(wind - ideal_min), abs(wind - ideal_max))
-            score += max(0, 30 - dist * 2)
+            d = min(abs(wind - ideal_min), abs(wind - ideal_max))
+            score += max(0, 30 - d * 2)
         if safety_ok:
             score += 30
         if spot_lvl == user_lvl:
             score += 20
-        # Bonus for closer spots when user location known
+        if quiver_ok:
+            score += 15
         if "distance_km" in s and req.max_distance_km:
             score += max(0, 10 - (s["distance_km"] / req.max_distance_km) * 10)
-        scored.append({**s, "score": round(score, 1), "in_ideal_range": in_range, "safety_ok": safety_ok})
+        scored.append({
+            **s,
+            "score": round(score, 1),
+            "in_ideal_range": in_range,
+            "safety_ok": safety_ok,
+            "recommended_kite": kite_pick,
+            "quiver_ok": quiver_ok,
+        })
 
     scored.sort(key=lambda x: x["score"], reverse=True)
     top3 = scored[:3]
@@ -624,16 +672,19 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
     chat = LlmChat(
         api_key=os.environ["EMERGENT_LLM_KEY"],
         session_id=f"sr_{uuid.uuid4().hex}",
-        system_message="Tu es un expert en spots de kitesurf. Donne en français un conseil concis (3-5 phrases) sur le meilleur spot pour le rider donné, en justifiant techniquement (vent, niveau, sécurité, matériel). REGLES DE STYLE: texte courant uniquement, aucun caractère markdown (pas de #, pas de *, pas de **, pas de _, pas de backticks, pas de tirets de liste), pas de titres, pas de gras, pas d'italique, pas d'emojis. Juste des phrases naturelles, fluides, comme à l'oral.",
+        system_message="Tu es un expert en spots de kitesurf. Donne en français un conseil concis (3-5 phrases) sur le meilleur spot pour le rider donné, en justifiant techniquement (vent, niveau, sécurité, choix du kite dans son quiver). REGLES DE STYLE: texte courant uniquement, aucun caractère markdown (pas de #, pas de *, pas de **, pas de _, pas de backticks, pas de tirets de liste), pas de titres, pas de gras, pas d'italique, pas d'emojis. Juste des phrases naturelles, fluides, comme à l'oral.",
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
     if not top3:
-        return {"top_spots": [], "ai_advice": "Pas de spot ventilé dans ce rayon. Essaie un autre jour ou élargis ta zone.", "requested": req.model_dump()}
+        return {"top_spots": [], "ai_advice": "Pas de spot ventilé à cette date/heure. Essaie un autre créneau ou élargis ta zone.", "requested": req.model_dump(), "target_date": target_date.isoformat(), "target_hour": target_hour}
     dist_info = f", à {top3[0]['distance_km']} km" if "distance_km" in top3[0] else ""
+    quiver_str = ", ".join([f"{k}m" for k in req.quiver]) if req.quiver else "non renseigné"
+    kite_pick_str = f"{top3[0]['recommended_kite']}m" if top3[0].get("recommended_kite") else "à adapter"
     user_msg = (
-        f"Rider: {req.weight_kg} kg, niveau {req.level}, kite {req.kite_size}m, "
-        f"board {req.board_size} cm, sport {req.sport}.\n"
-        f"Top spot proposé: {top3[0]['name']}{dist_info} avec vent actuel {top3[0]['wind_kts_now']} kts (idéal {top3[0]['ideal_kts'][0]}-{top3[0]['ideal_kts'][1]} kts, type {top3[0]['type']}).\n"
-        "Donne ton verdict et une recommandation matériel/sécurité."
+        f"Rider: {req.weight_kg} kg, niveau {req.level}, quiver {quiver_str}, board {req.board_size} cm, sport {req.sport}.\n"
+        f"Créneau visé: {target_date.isoformat()} à {target_hour}h locale.\n"
+        f"Top spot proposé: {top3[0]['name']}{dist_info} avec vent prévu {top3[0]['wind_kts_now']} kts (idéal {top3[0]['ideal_kts'][0]}-{top3[0]['ideal_kts'][1]} kts, type {top3[0]['type']}).\n"
+        f"Kite recommandé du quiver: {kite_pick_str}.\n"
+        "Donne ton verdict, le choix du kite, et une recommandation sécurité."
     )
     try:
         ai_comment = await chat.send_message(UserMessage(text=user_msg))
@@ -642,7 +693,13 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
 
     ai_comment = strip_markdown(ai_comment)
 
-    return {"top_spots": top3, "ai_advice": ai_comment, "requested": req.model_dump()}
+    return {
+        "top_spots": top3,
+        "ai_advice": ai_comment,
+        "requested": req.model_dump(),
+        "target_date": target_date.isoformat(),
+        "target_hour": target_hour,
+    }
 
 # ============================================================
 # Health

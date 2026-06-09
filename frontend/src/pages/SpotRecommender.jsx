@@ -6,9 +6,15 @@ import { Wind, MapPin, Shield, Crown, Sparkles, Navigation, AlertCircle } from "
 
 export default function SpotRecommender() {
   const { user } = useAuth();
-  const [form, setForm] = useState({
-    weight_kg: 75, kite_size: 10, board_size: 138, level: "intermediate", wind_kts: 20, sport: "kitesurf",
-  });
+  const [{ today, maxDate }] = useState(() => ({
+    today: new Date().toISOString().slice(0, 10),
+    maxDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+  }));
+  const [form, setForm] = useState(() => ({
+    weight_kg: 75, quiver: [9, 12], board_size: 138, level: "intermediate", sport: "kitesurf",
+    target_date: new Date().toISOString().slice(0, 10), target_hour: 14,
+  }));
+  const [newKite, setNewKite] = useState("");
   const [location, setLocation] = useState({ lat: null, lon: null, label: "" });
   const [maxDistance, setMaxDistance] = useState(500); // km
   const [useLocation, setUseLocation] = useState(false);
@@ -26,8 +32,8 @@ export default function SpotRecommender() {
         <div className="max-w-3xl mx-auto text-center p-12 border-2 border-[#1E6BFF]/40 bg-[#0A0A0A]">
           <Crown className="h-16 w-16 text-[#1E6BFF] mx-auto mb-6" />
           <h1 className="font-display text-3xl md:text-5xl mb-4">SPOT FINDER · PREMIUM</h1>
-          <p className="text-gray-400 mb-2">L'algo croise ton poids, ton matériel, ta localisation et le vent réel pour te proposer le spot idéal.</p>
-          <p className="text-gray-400 mb-8">Disponible uniquement sur l'abonnement Premium (15.99€/mois).</p>
+          <p className="text-gray-400 mb-2">L&apos;algo croise ton poids, ton matériel, ta localisation et le vent réel pour te proposer le spot idéal.</p>
+          <p className="text-gray-400 mb-8">Disponible uniquement sur l&apos;abonnement Premium (15.99€/mois).</p>
           <Link data-testid="spot-upgrade" to="/pricing" className="inline-block bg-[#1E6BFF] hover:bg-[#1751C4] text-white px-8 py-4 font-display tracking-wider">
             PASSER PREMIUM
           </Link>
@@ -57,7 +63,7 @@ export default function SpotRecommender() {
             const x = d.results[0];
             label = [x.name, x.admin1, x.country].filter(Boolean).join(", ");
           }
-        } catch {}
+        } catch (_) { /* ignore reverse geocoding errors */ }
         setLocation({ lat, lon, label });
         setUseLocation(true);
         setGeoLoading(false);
@@ -116,7 +122,7 @@ export default function SpotRecommender() {
       <div className="max-w-7xl mx-auto">
         <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-2">PREMIUM · SPOT FINDER</div>
         <h1 className="font-display text-4xl md:text-6xl mb-3">LE BON SPOT, <span className="text-[#1E6BFF]">LE BON JOUR</span></h1>
-        <p className="text-gray-400 max-w-3xl mb-10">Données vent en temps réel via Open-Meteo. L'IA score les spots selon ton matériel, ton niveau, et la distance que tu peux parcourir.</p>
+        <p className="text-gray-400 max-w-3xl mb-10">Données vent en temps réel via Open-Meteo. L&apos;IA score les spots selon ton matériel, ton niveau, et la distance que tu peux parcourir.</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <form onSubmit={submit} className="lg:col-span-1 p-8 border border-[#262626] bg-[#0A0A0A] space-y-4" data-testid="spot-form">
@@ -175,9 +181,60 @@ export default function SpotRecommender() {
               <Field label="POIDS (KG)">
                 <input data-testid="weight-input" type="number" step="0.5" value={form.weight_kg} onChange={(e) => setForm({...form, weight_kg: parseFloat(e.target.value)})} className="sr-input" />
               </Field>
-              <Field label="TAILLE KITE (M²)">
-                <input data-testid="kite-input" type="number" step="0.5" value={form.kite_size} onChange={(e) => setForm({...form, kite_size: parseFloat(e.target.value)})} className="sr-input" />
+
+              <Field label={`QUIVER · ${form.quiver.length} kite${form.quiver.length > 1 ? "s" : ""}`}>
+                <div className="flex flex-wrap gap-2 mb-2" data-testid="quiver-chips">
+                  {form.quiver.length === 0 && <span className="text-xs text-gray-500">Aucun kite renseigné</span>}
+                  {form.quiver.map((k, i) => (
+                    <span key={`${k}-${i}`} className="inline-flex items-center gap-1 px-2 py-1 bg-[#1E6BFF]/15 border border-[#1E6BFF]/50 text-sm">
+                      <span className="font-display">{k}m</span>
+                      <button
+                        type="button"
+                        data-testid={`remove-kite-${i}`}
+                        onClick={() => setForm({...form, quiver: form.quiver.filter((_, idx) => idx !== i)})}
+                        className="text-[#1E6BFF] hover:text-white text-base leading-none"
+                        aria-label="Retirer"
+                      >×</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    data-testid="new-kite-input"
+                    type="number"
+                    step="0.5"
+                    min="3"
+                    max="22"
+                    value={newKite}
+                    onChange={(e) => setNewKite(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const v = parseFloat(newKite);
+                        if (!isNaN(v) && v > 0) {
+                          setForm({...form, quiver: [...form.quiver, v].sort((a, b) => a - b)});
+                          setNewKite("");
+                        }
+                      }
+                    }}
+                    placeholder="ex: 7"
+                    className="sr-input flex-1"
+                  />
+                  <button
+                    type="button"
+                    data-testid="add-kite-btn"
+                    onClick={() => {
+                      const v = parseFloat(newKite);
+                      if (!isNaN(v) && v > 0) {
+                        setForm({...form, quiver: [...form.quiver, v].sort((a, b) => a - b)});
+                        setNewKite("");
+                      }
+                    }}
+                    className="px-4 border border-[#262626] hover:border-[#1E6BFF] text-sm font-display tracking-wider"
+                  >AJOUTER</button>
+                </div>
               </Field>
+
               <Field label="BOARD (CM)">
                 <input data-testid="board-input" type="number" value={form.board_size} onChange={(e) => setForm({...form, board_size: parseFloat(e.target.value)})} className="sr-input" />
               </Field>
@@ -188,6 +245,37 @@ export default function SpotRecommender() {
                   <option value="advanced">Avancé</option>
                   <option value="pro">Pro</option>
                 </select>
+              </Field>
+            </div>
+
+            {/* Date / time picker */}
+            <div className="border-t border-[#262626] pt-4 space-y-4">
+              <div className="font-display text-xs tracking-wider text-[#1E6BFF]">QUAND ?</div>
+              <Field label="DATE (JUSQU&apos;À +14 JOURS)">
+                <input
+                  data-testid="date-input"
+                  type="date"
+                  value={form.target_date}
+                  min={today}
+                  max={maxDate}
+                  onChange={(e) => setForm({...form, target_date: e.target.value})}
+                  className="sr-input"
+                />
+              </Field>
+              <Field label={`HEURE LOCALE · ${form.target_hour}H`}>
+                <input
+                  data-testid="hour-input"
+                  type="range"
+                  min="6"
+                  max="20"
+                  step="1"
+                  value={form.target_hour}
+                  onChange={(e) => setForm({...form, target_hour: parseInt(e.target.value)})}
+                  className="w-full accent-[#1E6BFF]"
+                />
+                <div className="flex justify-between text-[10px] text-gray-500 mt-1 font-display tracking-wider">
+                  <span>6h</span><span>12h</span><span>16h</span><span>20h</span>
+                </div>
               </Field>
             </div>
 
@@ -237,10 +325,15 @@ export default function SpotRecommender() {
                         )}
                       </div>
                       <div className="text-sm text-gray-400 mb-2">Type: {s.type} · Niveau spot: {s.level} · Vent idéal: {s.ideal_kts[0]}–{s.ideal_kts[1]} kts</div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1"><Wind className="h-4 w-4 text-[#1E6BFF]" /> <span className="font-display text-lg">{s.wind_kts_now?.toFixed(1)}</span> kts maintenant</div>
-                        <div className="text-gray-400">Score: <span className="text-[#1E6BFF] font-display text-lg">{s.score}</span></div>
+                  <div className="flex items-center gap-4 text-sm flex-wrap">
+                    <div className="flex items-center gap-1"><Wind className="h-4 w-4 text-[#1E6BFF]" /> <span className="font-display text-lg">{s.wind_kts_now?.toFixed(1)}</span> kts</div>
+                    {s.recommended_kite && (
+                      <div className="text-gray-300 text-sm flex items-center gap-1">
+                        Kite conseillé : <span className="font-display text-lg text-[#1E6BFF]">{s.recommended_kite}m</span>
                       </div>
+                    )}
+                    <div className="text-gray-400">Score: <span className="text-[#1E6BFF] font-display text-lg">{s.score}</span></div>
+                  </div>
                     </div>
                   </div>
                 ))}
