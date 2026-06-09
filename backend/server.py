@@ -311,7 +311,7 @@ COURSES = [
      "thumbnail": "https://images.unsplash.com/photo-1502933691298-84fc14542831?w=800",
      "description": "Apprends à voler stable sur ton foil."},
     {"id": "c6", "title": "Pop wakeboard derrière bateau", "sport": "wakeboard", "level": "Intermédiaire", "duration": "16 min",
-     "thumbnail": "https://images.unsplash.com/photo-1530541930197-ff16ac917b0e?w=800",
+     "thumbnail": "https://images.unsplash.com/photo-1666032234128-abc3e45bd1dc?fm=jpg&q=85&w=800&auto=format&fit=crop",
      "description": "Edge agressif et pop explosif au wake."},
 ]
 
