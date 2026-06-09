@@ -24,16 +24,23 @@ export default function Courses() {
         <p className="text-gray-400 max-w-2xl mb-10">Modules vidéo structurés pour progresser, du débutant à l'avancé. Kitesurf, wakeboard, foil.</p>
 
         <div className="flex flex-wrap gap-2 mb-10">
-          {["all", "kitesurf", "wakeboard", "foil"].map((s) => (
+          {[
+            { id: "all", label: "TOUS", soon: false },
+            { id: "kitesurf", label: "KITESURF", soon: false },
+            { id: "wakeboard", label: "WAKEBOARD", soon: true },
+            { id: "foil", label: "FOIL", soon: true },
+          ].map((s) => (
             <button
-              key={s}
-              data-testid={`filter-${s}`}
-              onClick={() => setFilter(s)}
-              className={`px-4 py-2 font-display tracking-wider text-sm transition ${
-                filter === s ? "bg-[#1E6BFF] text-white" : "border border-[#262626] text-gray-300 hover:border-[#1E6BFF]"
-              }`}
+              key={s.id}
+              data-testid={`filter-${s.id}`}
+              onClick={() => !s.soon && setFilter(s.id)}
+              disabled={s.soon}
+              className={`px-4 py-2 font-display tracking-wider text-sm transition flex items-center gap-2 ${
+                filter === s.id ? "bg-[#1E6BFF] text-white" : "border border-[#262626] text-gray-300 hover:border-[#1E6BFF]"
+              } ${s.soon ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              {s.toUpperCase()}
+              {s.label}
+              {s.soon && <span className="text-[9px] tracking-widest text-[#1E6BFF] border border-[#1E6BFF]/60 px-1.5">À VENIR</span>}
             </button>
           ))}
         </div>

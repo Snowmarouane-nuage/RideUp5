@@ -75,9 +75,9 @@ export default function VideoAnalysis() {
                 className="w-full bg-black border border-[#262626] px-4 py-3 focus:border-[#1E6BFF] outline-none"
               >
                 <option value="kitesurf">Kitesurf</option>
-                <option value="wakeboard">Wakeboard</option>
-                <option value="foil">Foil</option>
-                <option value="surf">Surf</option>
+                <option value="wakeboard" disabled>Wakeboard (à venir)</option>
+                <option value="foil" disabled>Foil (à venir)</option>
+                <option value="surf" disabled>Surf (à venir)</option>
               </select>
             </div>
             <div>

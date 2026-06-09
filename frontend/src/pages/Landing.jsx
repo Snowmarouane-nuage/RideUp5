@@ -4,11 +4,11 @@ import { ArrowRight, Wind, Video, MapPin, Sparkles, Activity, Target } from "luc
 import { useAuth } from "@/context/AuthContext";
 
 const HERO_IMAGES = [
-  { url: "https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "KITESURF" },
-  { url: "https://images.unsplash.com/photo-1666032234128-abc3e45bd1dc?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKEBOARD" },
-  { url: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "SURF" },
-  { url: "https://images.unsplash.com/photo-1752170053218-5f05ccfbee4e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKE CABLE" },
-  { url: "https://images.unsplash.com/photo-1672699303810-0b55ddad76b5?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "FOIL" },
+  { url: "https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "KITESURF", available: true },
+  { url: "https://images.unsplash.com/photo-1666032234128-abc3e45bd1dc?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKEBOARD", available: false },
+  { url: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "SURF", available: false },
+  { url: "https://images.unsplash.com/photo-1752170053218-5f05ccfbee4e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKE CABLE", available: false },
+  { url: "https://images.unsplash.com/photo-1672699303810-0b55ddad76b5?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "FOIL", available: false },
 ];
 const VIDEO_IMG = "https://images.unsplash.com/photo-1601900957092-ae3e67b47b03?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
 const COURSE_IMG = "https://images.unsplash.com/photo-1578060124065-41f863eb9ebe?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
@@ -65,6 +65,9 @@ export default function Landing() {
               onClick={() => setSlide(i)}
               className={`group flex items-center gap-3 transition-all ${slide === i ? "opacity-100" : "opacity-40 hover:opacity-70"}`}
             >
+              {!img.available && (
+                <span className="text-[9px] tracking-widest text-[#1E6BFF] font-display border border-[#1E6BFF]/60 px-1.5 py-0.5">À VENIR</span>
+              )}
               <span className="font-display text-xs tracking-[0.3em] text-white">{img.label}</span>
               <span className={`block h-0.5 transition-all ${slide === i ? "w-12 bg-[#1E6BFF]" : "w-6 bg-white/40"}`} />
             </button>
@@ -74,7 +77,7 @@ export default function Landing() {
         <div className="relative max-w-7xl mx-auto px-6 py-32 w-full">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#1E6BFF] text-[#1E6BFF] text-xs font-display tracking-wider mb-6">
-              <Activity className="h-3 w-3" /> COACHING PREMIUM · KITE / WAKE / FOIL / SURF
+              <Activity className="h-3 w-3" /> COACHING PREMIUM · KITE <span className="text-gray-500 normal-case tracking-normal">+ wake / foil / surf bientôt</span>
             </div>
             <h1 className="font-display text-5xl md:text-7xl lg:text-8xl leading-[0.95] mb-6">
               PROGRESS<br /><span className="text-[#1E6BFF]">YOUR RIDE.</span>
