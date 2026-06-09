@@ -792,6 +792,282 @@ async def spots_weekend_forecast(user_lat: Optional[float] = None, user_lon: Opt
 async def root():
     return {"app": "RIDEMIND", "status": "ok"}
 
+
+# ============================================================
+# COACH (personal trick-by-trick progression)
+# ============================================================
+
+class CoachOnboarding(BaseModel):
+    level: str  # Débutant | Intermédiaire | Avancé | Pro
+    sport: str = "kitesurf"
+    current_tricks: List[str] = []  # tricks already mastered
+    goal: str = ""  # free-text goal
+
+
+class CoachChatRequest(BaseModel):
+    message: str
+
+
+@api.get("/coach/profile")
+async def get_coach_profile(request: Request):
+    user = await require_user(request)
+    profile = await db.coach_profiles.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    return profile  # may be None if not onboarded yet
+
+
+@api.post("/coach/onboarding")
+async def coach_onboarding(payload: CoachOnboarding, request: Request):
+    user = await require_user(request)
+
+    # Build a personalised roadmap via the AI
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    import json as _json
+    chat = LlmChat(
+        api_key=os.environ["EMERGENT_LLM_KEY"],
+        session_id=f"coach_ob_{uuid.uuid4().hex}",
+        system_message=(
+            "Tu es RIDEMIND COACH, un coach personnel de kitesurf. Pour le rider donné, "
+            "construis une roadmap de 6 à 9 tricks ordonnés du plus simple au plus avancé, "
+            "à partir de son niveau et de ses tricks déjà acquis. Réponds UNIQUEMENT par un objet JSON valide :\n"
+            "{\n"
+            '  "welcome": "phrase d\'accueil personnalisée 1-2 phrases",\n'
+            '  "roadmap": [\n'
+            '    {"trick": "nom du trick", "why": "1 phrase: pourquoi cette étape", "difficulty": "1 à 5"}\n'
+            "  ]\n"
+            "}\n"
+            "REGLES DE STYLE STRICTES: texte courant, aucun caractère markdown (#, *, **, _, backticks, tirets de liste), "
+            "pas d'emojis, pas de mise en gras, phrases naturelles comme à l'oral."
+        ),
+    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+
+    user_msg = (
+        f"Sport: {payload.sport}. Niveau: {payload.level}. "
+        f"Tricks acquis: {', '.join(payload.current_tricks) if payload.current_tricks else 'aucun'}. "
+        f"Objectif: {payload.goal or 'progresser globalement'}."
+    )
+    try:
+        resp = await chat.send_message(UserMessage(text=user_msg))
+        cleaned = resp.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
+            if cleaned.rstrip().endswith("```"):
+                cleaned = cleaned.rstrip()[:-3]
+        data = _json.loads(cleaned)
+        data = clean_structured(data)
+    except Exception:
+        data = {
+            "welcome": "Bienvenue ! On va construire ensemble ta progression étape par étape.",
+            "roadmap": [
+                {"trick": "Water start propre", "why": "Base de toute session", "difficulty": "2"},
+                {"trick": "Remonter au vent", "why": "Condition pour revenir au point de départ", "difficulty": "2"},
+                {"trick": "Transitions douces", "why": "Maîtrise du kite dans la fenêtre", "difficulty": "3"},
+                {"trick": "Premier saut", "why": "Pop, send, edge, réception", "difficulty": "3"},
+                {"trick": "Back roll", "why": "Première rotation aérienne", "difficulty": "4"},
+                {"trick": "Front roll", "why": "Variante rotation avant", "difficulty": "4"},
+            ],
+        }
+
+    roadmap = [
+        {**t, "status": "todo"}
+        for t in data.get("roadmap", [])
+    ]
+
+    profile = {
+        "user_id": user["user_id"],
+        "sport": payload.sport,
+        "level": payload.level,
+        "current_tricks": payload.current_tricks,
+        "goal": payload.goal,
+        "welcome": data.get("welcome", ""),
+        "roadmap": roadmap,
+        "messages": [],  # chat history
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    # Upsert (replace previous onboarding)
+    await db.coach_profiles.replace_one({"user_id": user["user_id"]}, profile, upsert=True)
+    profile.pop("_id", None)
+    return profile
+
+
+@api.post("/coach/trick/complete")
+async def complete_trick(request: Request):
+    user = await require_user(request)
+    body = await request.json()
+    trick = body.get("trick")
+    profile = await db.coach_profiles.find_one({"user_id": user["user_id"]})
+    if not profile:
+        raise HTTPException(status_code=404, detail="No coach profile")
+    roadmap = profile.get("roadmap", [])
+    for t in roadmap:
+        if t["trick"] == trick:
+            t["status"] = "done"
+            t["completed_at"] = datetime.now(timezone.utc).isoformat()
+            break
+    await db.coach_profiles.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"roadmap": roadmap, "updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    profile["roadmap"] = roadmap
+    profile.pop("_id", None)
+    return profile
+
+
+@api.post("/coach/chat")
+async def coach_chat(payload: CoachChatRequest, request: Request):
+    user = await require_user(request)
+    profile = await db.coach_profiles.find_one({"user_id": user["user_id"]})
+    if not profile:
+        raise HTTPException(status_code=404, detail="No coach profile - please complete onboarding first")
+
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    history = profile.get("messages", [])
+    completed = [t["trick"] for t in profile.get("roadmap", []) if t.get("status") == "done"]
+    todo = [t["trick"] for t in profile.get("roadmap", []) if t.get("status") != "done"]
+    next_trick = todo[0] if todo else None
+
+    next_trick_or_default = next_trick or "roadmap terminée, propose d'aller plus loin"
+    acquired = ', '.join(profile['current_tricks'] + completed) if (profile['current_tricks'] or completed) else 'aucun'
+    goal = profile.get('goal') or 'progression continue'
+    system = (
+        f"Tu es RIDEMIND COACH, coach personnel kitesurf du rider. Niveau actuel: {profile['level']}. "
+        f"Tricks déjà acquis: {acquired}. "
+        f"Prochain trick visé: {next_trick_or_default}. "
+        f"Objectif rider: {goal}. "
+        "Tu réponds en français, ton chaleureux et motivant de coach pro, en 2-4 phrases naturelles. "
+        "REGLES DE STYLE STRICTES: pas de markdown (#, *, **, _, backticks, listes -), pas d'emojis, "
+        "texte courant fluide comme à l'oral."
+    )
+    # Build a session continuing previous messages
+    chat = LlmChat(
+        api_key=os.environ["EMERGENT_LLM_KEY"],
+        session_id=f"coach_chat_{user['user_id']}",
+        system_message=system,
+    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+
+    # Append previous user/assistant turns as context in a single user message (simplified)
+    context_chunks = []
+    for m in history[-6:]:
+        prefix = "Rider:" if m["role"] == "user" else "Coach:"
+        context_chunks.append(f"{prefix} {m['text']}")
+    context_chunks.append(f"Rider: {payload.message}")
+    full_msg = "\n".join(context_chunks)
+    try:
+        ai_resp = await chat.send_message(UserMessage(text=full_msg))
+        ai_resp = strip_markdown(ai_resp)
+    except Exception as e:
+        logger.exception("coach chat error")
+        raise HTTPException(status_code=500, detail=f"Coach error: {e}")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    history.append({"role": "user", "text": payload.message, "at": now_iso})
+    history.append({"role": "coach", "text": ai_resp, "at": now_iso})
+    await db.coach_profiles.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"messages": history, "updated_at": now_iso}},
+    )
+    return {"reply": ai_resp, "messages": history[-20:]}
+
+
+# ============================================================
+# DASHBOARD STATS
+# ============================================================
+
+@api.get("/dashboard/stats")
+async def dashboard_stats(request: Request):
+    user = await require_user(request)
+    user_id = user["user_id"]
+
+    # Counters
+    analyses = await db.video_analyses.find({"user_id": user_id}, {"_id": 0}).to_list(500)
+    total_analyses = len(analyses)
+
+    profile = await db.coach_profiles.find_one({"user_id": user_id}, {"_id": 0})
+    roadmap = (profile or {}).get("roadmap", [])
+    tricks_done = sum(1 for t in roadmap if t.get("status") == "done")
+    tricks_total = len(roadmap)
+
+    # Weekly buckets for last 8 weeks
+    from collections import defaultdict
+    week_buckets = defaultdict(int)
+    now = datetime.now(timezone.utc)
+    for a in analyses:
+        try:
+            d = datetime.fromisoformat(a["created_at"].replace("Z", "+00:00"))
+        except Exception:
+            continue
+        delta_days = (now - d).days
+        if delta_days < 0:
+            continue
+        wk = delta_days // 7
+        if wk < 8:
+            week_buckets[wk] += 1
+    # Build chart array oldest-to-newest (7 weeks ago -> this week)
+    chart = []
+    for i in range(7, -1, -1):
+        chart.append({"week_offset": i, "count": week_buckets.get(i, 0)})
+
+    # Days since onboarding / first analysis
+    start_iso = None
+    if profile:
+        start_iso = profile.get("created_at")
+    elif analyses:
+        start_iso = min(a["created_at"] for a in analyses)
+    days_active = 0
+    if start_iso:
+        try:
+            start_dt = datetime.fromisoformat(start_iso.replace("Z", "+00:00"))
+            days_active = max(1, (now - start_dt).days)
+        except Exception:
+            days_active = 1
+
+    # Generate an AI encouragement message
+    encouragement = ""
+    if total_analyses > 0 or tricks_done > 0:
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            ai = LlmChat(
+                api_key=os.environ["EMERGENT_LLM_KEY"],
+                session_id=f"dash_{user_id}_{now.date().isoformat()}",
+                system_message=(
+                    "Tu es RIDEMIND COACH. Tu écris un message d'encouragement court (2-3 phrases) "
+                    "pour le rider, en t'appuyant sur ses stats. Ton positif, motivant, sport. "
+                    "REGLES DE STYLE STRICTES: pas de markdown, pas d'emojis, texte courant fluide."
+                ),
+            ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+            msg = (
+                f"Stats du rider {user['name'].split(' ')[0]}: "
+                f"{total_analyses} analyses vidéo réalisées, "
+                f"{tricks_done}/{tricks_total} tricks de la roadmap validés, "
+                f"actif depuis {days_active} jours. "
+                "Écris-lui un message court d'encouragement et un point de focus pour la suite."
+            )
+            r = await ai.send_message(UserMessage(text=msg))
+            encouragement = strip_markdown(r)
+        except Exception:
+            encouragement = "Continue comme ça, chaque session compte. La régularité bat le talent."
+    else:
+        encouragement = "Bienvenue dans RIDEMIND. Commence par configurer ton coach personnel, puis lance ta première analyse vidéo."
+
+    # Recent activity
+    recent = sorted(analyses, key=lambda a: a["created_at"], reverse=True)[:3]
+    recent_simple = [
+        {"sport": a["sport"], "level": a["level"], "created_at": a["created_at"], "headline": (a.get("structured") or {}).get("headline") or a.get("description", "")[:80]}
+        for a in recent
+    ]
+
+    return {
+        "total_analyses": total_analyses,
+        "tricks_done": tricks_done,
+        "tricks_total": tricks_total,
+        "days_active": days_active,
+        "weekly_chart": chart,
+        "encouragement": encouragement,
+        "recent_analyses": recent_simple,
+        "has_coach_profile": profile is not None,
+    }
+
+
 # Mount router
 app.include_router(api)
 

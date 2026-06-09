@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import Courses from "@/pages/Courses";
 import VideoAnalysis from "@/pages/VideoAnalysis";
 import SpotRecommender from "@/pages/SpotRecommender";
+import Coach from "@/pages/Coach";
 import AuthCallback from "@/pages/AuthCallback";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import WeekendSpots from "@/pages/WeekendSpots";
@@ -31,6 +32,7 @@ function AppRouter() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/video-analysis" element={<VideoAnalysis />} />
+        <Route path="/coach" element={<Coach />} />
         <Route path="/spot-recommender" element={<SpotRecommender />} />
         <Route path="/meilleurs-spots-kitesurf-weekend" element={<WeekendSpots />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

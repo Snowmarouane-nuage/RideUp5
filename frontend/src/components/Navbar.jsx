@@ -7,6 +7,7 @@ import { LogOut, User, Menu, X } from "lucide-react";
 const NAV_LINKS = [
   { to: "/", label: "ACCUEIL", testId: "nav-home" },
   { to: "/pricing", label: "ABONNEMENTS", testId: "nav-pricing" },
+  { to: "/coach", label: "COACH", testId: "nav-coach" },
   { to: "/courses", label: "COURS", testId: "nav-courses" },
   { to: "/video-analysis", label: "ANALYSE", testId: "nav-analysis" },
   { to: "/spot-recommender", label: "SPOTS", testId: "nav-spots" },
