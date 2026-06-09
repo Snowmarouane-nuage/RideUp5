@@ -155,7 +155,7 @@ export default function Landing() {
                   <Video className="h-3 w-3" /> ANALYSE IA
                 </div>
                 <h3 className="font-display text-3xl md:text-4xl mb-2">DÉCRYPTE TES SESSIONS</h3>
-                <p className="text-gray-300 max-w-md">Upload ta vidéo, décris ta question. Claude AI te donne un retour technique structuré: diagnostic, corrections, drills.</p>
+                <p className="text-gray-300 max-w-md">Upload ta vidéo, décris ta question. L'agent RIDEMIND te donne un retour technique structuré: diagnostic, corrections, drills.</p>
               </div>
             </div>
 

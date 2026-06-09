@@ -56,7 +56,7 @@ export default function Pricing() {
         "Recommandations sécurité personnalisées",
         "Données vent en temps réel (Open-Meteo)",
         "Analyses prioritaires",
-        "Conseils IA matériel adaptés",
+        "Conseils matériel personnalisés par IA",
       ],
       cta: "PASSER PREMIUM",
       highlight: true,

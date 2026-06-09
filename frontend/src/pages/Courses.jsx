@@ -21,7 +21,7 @@ export default function Courses() {
       <div className="max-w-7xl mx-auto">
         <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-2">BIBLIOTHÈQUE</div>
         <h1 className="font-display text-4xl md:text-6xl mb-6">COURS <span className="text-[#1E6BFF]">RIDEMIND</span></h1>
-        <p className="text-gray-400 max-w-2xl mb-10">Modules vidéo structurés pour progresser, du débutant à l'avancé. Kitesurf, wakeboard, foil.</p>
+        <p className="text-gray-400 max-w-2xl mb-10">Modules vidéo structurés pour progresser, du débutant à l'avancé. Kitesurf disponible aujourd'hui · Wakeboard et Foil bientôt.</p>
 
         <div className="flex flex-wrap gap-2 mb-10">
           {[
@@ -59,11 +59,16 @@ export default function Courses() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((c) => (
-            <div key={c.id} data-testid={`course-${c.id}`} className="group relative border border-[#262626] bg-[#0A0A0A] hover:border-[#1E6BFF]/60 transition-all">
+            <div key={c.id} data-testid={`course-${c.id}`} className={`group relative border border-[#262626] bg-[#0A0A0A] hover:border-[#1E6BFF]/60 transition-all ${c.coming_soon ? "opacity-70" : ""}`}>
               <div className="relative overflow-hidden">
                 <img src={c.thumbnail} alt={c.title} className="w-full h-56 object-cover group-hover:scale-105 transition duration-500" />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  {locked ? (
+                  {c.coming_soon ? (
+                    <div className="text-center">
+                      <Lock className="h-10 w-10 text-white mx-auto mb-1" />
+                      <div className="text-[10px] font-display tracking-[0.25em] text-[#1E6BFF] border border-[#1E6BFF] px-2 py-0.5 bg-black/70">À VENIR</div>
+                    </div>
+                  ) : locked ? (
                     <Lock className="h-12 w-12 text-white" />
                   ) : (
                     <div className="h-16 w-16 rounded-full bg-[#1E6BFF] flex items-center justify-center group-hover:scale-110 transition">

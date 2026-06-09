@@ -35,7 +35,7 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card to="/video-analysis" icon={<Video className="h-7 w-7" />} title="ANALYSE VIDÉO" desc="Décrypte tes sessions avec Claude AI." locked={!hasPlan} testId="card-video" />
+          <Card to="/video-analysis" icon={<Video className="h-7 w-7" />} title="ANALYSE VIDÉO" desc="Décrypte tes sessions avec l'agent RIDEMIND." locked={!hasPlan} testId="card-video" />
           <Card to="/courses" icon={<BookOpen className="h-7 w-7" />} title="COURS" desc="Progresse avec nos modules structurés." locked={!hasPlan} testId="card-courses" />
           <Card
             to="/spot-recommender"

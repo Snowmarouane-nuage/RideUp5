@@ -62,7 +62,7 @@ export default function VideoAnalysis() {
       <div className="max-w-6xl mx-auto">
         <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-2">COACHING IA</div>
         <h1 className="font-display text-4xl md:text-6xl mb-3">ANALYSE <span className="text-[#1E6BFF]">VIDÉO</span></h1>
-        <p className="text-gray-400 mb-10 max-w-2xl">Upload ta vidéo (optionnel) et décris la figure ou la session. Claude Sonnet 4.5 te livre un retour technique structuré.</p>
+        <p className="text-gray-400 mb-10 max-w-2xl">Upload ta vidéo (optionnel) et décris la figure ou la session. L'agent RIDEMIND te livre un retour technique structuré.</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <form onSubmit={submit} className="p-8 border border-[#262626] bg-[#0A0A0A] space-y-5" data-testid="analysis-form">
@@ -135,7 +135,7 @@ export default function VideoAnalysis() {
             <div className="font-display text-xl mb-4 flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-[#1E6BFF]" /> RETOUR DE COACH IA
             </div>
-            {loading && <div className="text-gray-400 animate-pulse">Claude analyse ta session...</div>}
+            {loading && <div className="text-gray-400 animate-pulse">L'agent RIDEMIND analyse ta session...</div>}
             {!loading && !result && <div className="text-gray-500 text-sm">Ton analyse apparaîtra ici.</div>}
             {result && (
               <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-gray-200 leading-relaxed">
