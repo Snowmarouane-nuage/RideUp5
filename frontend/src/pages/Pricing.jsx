@@ -37,7 +37,7 @@ export default function Pricing() {
       tagline: "Progresse avec les outils essentiels",
       features: [
         "Analyse vidéo IA illimitée",
-        "Accès à tous les cours de kite",
+        "Accès aux cours kite (disponibles très bientôt)",
         "Tous niveaux (débutant → avancé)",
         "Historique de tes analyses",
         "Support communauté",

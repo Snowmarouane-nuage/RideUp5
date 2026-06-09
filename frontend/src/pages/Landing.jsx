@@ -168,7 +168,7 @@ export default function Landing() {
                   <Sparkles className="h-3 w-3" /> COURS
                 </div>
                 <h3 className="font-display text-3xl mb-2">DÉBUTANT À AVANCÉ</h3>
-                <p className="text-gray-300">Bibliothèque structurée pour progresser à ton rythme.</p>
+                <p className="text-gray-300">Bibliothèque vidéo en construction — premiers modules disponibles très bientôt.</p>
               </div>
             </div>
 

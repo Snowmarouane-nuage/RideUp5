@@ -29,9 +29,11 @@ export default function Footer() {
         <div>
           <div className="font-display text-sm tracking-wider mb-3 text-gray-300">LÉGAL</div>
           <ul className="space-y-2 text-sm text-gray-400">
-            <li>Mentions légales</li>
-            <li>CGU</li>
-            <li>Confidentialité</li>
+            <li><Link to="/mentions-legales" data-testid="footer-legal-mentions" className="hover:text-[#1E6BFF]">Mentions légales</Link></li>
+            <li><Link to="/cgu" data-testid="footer-legal-cgu" className="hover:text-[#1E6BFF]">CGU</Link></li>
+            <li><Link to="/confidentialite" data-testid="footer-legal-privacy" className="hover:text-[#1E6BFF]">Confidentialité</Link></li>
+            <li><Link to="/cookies" data-testid="footer-legal-cookies" className="hover:text-[#1E6BFF]">Cookies</Link></li>
+            <li className="pt-2 text-gray-500">contact@ridemind.com</li>
           </ul>
         </div>
       </div>

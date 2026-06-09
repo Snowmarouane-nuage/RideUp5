@@ -11,6 +11,7 @@ import VideoAnalysis from "@/pages/VideoAnalysis";
 import SpotRecommender from "@/pages/SpotRecommender";
 import AuthCallback from "@/pages/AuthCallback";
 import PaymentSuccess from "@/pages/PaymentSuccess";
+import { MentionsLegales, CGU, Confidentialite, Cookies } from "@/pages/Legal";
 import { Toaster } from "sonner";
 
 function AppRouter() {
@@ -32,6 +33,10 @@ function AppRouter() {
         <Route path="/spot-recommender" element={<SpotRecommender />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/cgu" element={<CGU />} />
+        <Route path="/confidentialite" element={<Confidentialite />} />
+        <Route path="/cookies" element={<Cookies />} />
       </Routes>
       {!hideChrome && <Footer />}
     </>
