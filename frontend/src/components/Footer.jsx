@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
           <div className="flex items-center gap-3">
-            <img src={LOGO_URL} alt="RIDEMIND" className="h-12 object-contain" />
+            <img src={LOGO_URL} alt="RIDEMIND" className="h-10 object-contain" />
             <div>
               <div className="font-display text-2xl">RIDE<span className="text-[#1E6BFF]">MIND</span></div>
               <div className="text-[10px] tracking-[0.25em] text-gray-400 uppercase">Progress your ride</div>
