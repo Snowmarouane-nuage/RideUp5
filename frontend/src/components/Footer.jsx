@@ -33,7 +33,7 @@ export default function Footer() {
             <li><Link to="/cgu" data-testid="footer-legal-cgu" className="hover:text-[#1E6BFF]">CGU</Link></li>
             <li><Link to="/confidentialite" data-testid="footer-legal-privacy" className="hover:text-[#1E6BFF]">Confidentialité</Link></li>
             <li><Link to="/cookies" data-testid="footer-legal-cookies" className="hover:text-[#1E6BFF]">Cookies</Link></li>
-            <li className="pt-2 text-gray-500">contact@ridemind.com</li>
+            <li className="pt-2"><a href="mailto:GetRideMind@gmail.com" className="text-gray-400 hover:text-[#1E6BFF]">GetRideMind@gmail.com</a></li>
           </ul>
         </div>
       </div>

@@ -22,7 +22,7 @@ export function MentionsLegales() {
   return (
     <LegalLayout title="MENTIONS LÉGALES">
       <h2 className="font-display text-2xl text-white">1. Éditeur du site</h2>
-      <p>RIDEMIND<br/>[Raison sociale à compléter]<br/>[Adresse postale à compléter]<br/>Email : contact@ridemind.com<br/>SIRET : [à compléter]<br/>RCS : [à compléter]<br/>N° TVA intracommunautaire : [à compléter]</p>
+      <p>RIDEMIND<br/>[Raison sociale à compléter]<br/>[Adresse postale à compléter]<br/>Email : GetRideMind@gmail.com<br/>SIRET : [à compléter]<br/>RCS : [à compléter]<br/>N° TVA intracommunautaire : [à compléter]</p>
 
       <h2 className="font-display text-2xl text-white mt-8">2. Directeur de publication</h2>
       <p>[Nom du responsable légal à compléter]</p>
@@ -34,7 +34,7 @@ export function MentionsLegales() {
       <p>L'ensemble des contenus présents sur le site RIDEMIND (textes, images, logos, vidéos pédagogiques, design, analyses IA) est protégé par le droit d'auteur et reste la propriété exclusive de l'éditeur ou de ses partenaires. Toute reproduction sans autorisation préalable est interdite.</p>
 
       <h2 className="font-display text-2xl text-white mt-8">5. Contact</h2>
-      <p>Pour toute question : contact@ridemind.com</p>
+      <p>Pour toute question : GetRideMind@gmail.com</p>
     </LegalLayout>
   );
 }
@@ -88,7 +88,7 @@ export function Confidentialite() {
       </ul>
 
       <h2 className="font-display text-2xl text-white mt-8">4. Tes droits (RGPD)</h2>
-      <p>Tu peux à tout moment demander l'accès, la rectification ou la suppression de tes données en écrivant à contact@ridemind.com. Tu peux également demander la portabilité de tes données.</p>
+      <p>Tu peux à tout moment demander l'accès, la rectification ou la suppression de tes données en écrivant à GetRideMind@gmail.com. Tu peux également demander la portabilité de tes données.</p>
 
       <h2 className="font-display text-2xl text-white mt-8">5. Conservation</h2>
       <p>Tes données sont conservées tant que ton compte est actif, puis supprimées dans les 90 jours suivant sa fermeture (sauf obligations légales — factures conservées 10 ans).</p>
