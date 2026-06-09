@@ -36,7 +36,7 @@ export default function AuthCallback() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="text-center">
-        <img src={LOGO_URL} alt="RIDEMIND" className="h-20 w-20 mx-auto animate-pulse" style={{ mixBlendMode: "screen" }} />
+        <img src={LOGO_URL} alt="RIDEMIND" className="h-20 mx-auto animate-pulse" />
         <div className="font-display text-2xl mt-6">CONNEXION EN COURS...</div>
         <div className="text-gray-400 text-sm mt-2">Préparation de ta session</div>
       </div>
