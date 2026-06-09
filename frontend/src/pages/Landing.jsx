@@ -1,8 +1,15 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { ArrowRight, Wind, Video, MapPin, Sparkles, Activity, Target } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-const HERO_IMG = "https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?crop=entropy&cs=srgb&fm=jpg&q=85&w=2000";
+const HERO_IMAGES = [
+  { url: "https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "KITESURF" },
+  { url: "https://images.unsplash.com/photo-1666032234128-abc3e45bd1dc?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKEBOARD" },
+  { url: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "SURF" },
+  { url: "https://images.unsplash.com/photo-1669173733012-9288d98b48c5?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKE CABLE" },
+  { url: "https://images.unsplash.com/photo-1672699303810-0b55ddad76b5?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "FOIL" },
+];
 const VIDEO_IMG = "https://images.unsplash.com/photo-1601900957092-ae3e67b47b03?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
 const COURSE_IMG = "https://images.unsplash.com/photo-1578060124065-41f863eb9ebe?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
 const SPOT_IMG = "https://images.unsplash.com/photo-1632990848833-2e7007adb204?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
@@ -10,6 +17,12 @@ const FEEDBACK_IMG = "https://images.unsplash.com/photo-1502933691298-84fc145428
 
 export default function Landing() {
   const { user } = useAuth();
+  const [slide, setSlide] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setSlide((s) => (s + 1) % HERO_IMAGES.length), 4500);
+    return () => clearInterval(id);
+  }, []);
 
   // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const handleStart = () => {
@@ -26,11 +39,38 @@ export default function Landing() {
       {/* HERO */}
       <section
         data-testid="hero-section"
-        className="relative min-h-[95vh] flex items-center overflow-hidden"
-        style={{ backgroundImage: `url(${HERO_IMG})`, backgroundSize: "cover", backgroundPosition: "center" }}
+        className="relative min-h-[95vh] flex items-center overflow-hidden bg-black"
       >
+        {/* Slideshow layers with crossfade */}
+        {HERO_IMAGES.map((img, i) => (
+          <div
+            key={img.url}
+            className="absolute inset-0 transition-opacity duration-[1500ms] ease-in-out"
+            style={{
+              backgroundImage: `url(${img.url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: slide === i ? 1 : 0,
+            }}
+          />
+        ))}
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
         <div className="absolute inset-0 diagonal-stripe opacity-40" />
+
+        {/* Discipline indicator */}
+        <div className="absolute top-32 right-8 z-10 hidden md:flex flex-col gap-3" data-testid="hero-disciplines">
+          {HERO_IMAGES.map((img, i) => (
+            <button
+              key={img.label}
+              onClick={() => setSlide(i)}
+              className={`group flex items-center gap-3 transition-all ${slide === i ? "opacity-100" : "opacity-40 hover:opacity-70"}`}
+            >
+              <span className="font-display text-xs tracking-[0.3em] text-white">{img.label}</span>
+              <span className={`block h-0.5 transition-all ${slide === i ? "w-12 bg-[#1E6BFF]" : "w-6 bg-white/40"}`} />
+            </button>
+          ))}
+        </div>
+
         <div className="relative max-w-7xl mx-auto px-6 py-32 w-full">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#1E6BFF] text-[#1E6BFF] text-xs font-display tracking-wider mb-6">
