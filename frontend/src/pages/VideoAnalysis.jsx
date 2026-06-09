@@ -58,7 +58,7 @@ export default function VideoAnalysis() {
       <div className="max-w-6xl mx-auto">
         <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-2">COACHING IA</div>
         <h1 className="font-display text-4xl md:text-6xl mb-3">ANALYSE <span className="text-[#1E6BFF]">VIDÉO</span></h1>
-        <p className="text-gray-400 mb-10 max-w-2xl">Upload ta vidéo (optionnel) et décris la figure ou la session. L'agent RIDEMIND te livre un retour technique structuré.</p>
+        <p className="text-gray-400 mb-10 max-w-2xl">Upload ta vidéo (optionnel) et décris la figure ou la session. L&apos;agent RIDEMIND te livre un retour technique structuré.</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Form */}
@@ -113,13 +113,13 @@ export default function VideoAnalysis() {
             {!loading && !result && (
               <div className="p-12 border border-dashed border-[#262626] bg-[#0A0A0A] text-center text-gray-500">
                 <Sparkles className="h-10 w-10 text-[#1E6BFF] mx-auto mb-3" />
-                Le retour de l'agent RIDEMIND apparaîtra ici.
+                Le retour de l&apos;agent RIDEMIND apparaîtra ici.
               </div>
             )}
             {loading && (
               <div className="p-12 border border-[#262626] bg-[#0A0A0A] text-center">
                 <div className="h-12 w-12 mx-auto rounded-full border-4 border-[#1E6BFF] border-t-transparent animate-spin mb-4" />
-                <div className="text-gray-300 font-display tracking-wider">L'AGENT RIDEMIND ANALYSE TA SESSION...</div>
+                <div className="text-gray-300 font-display tracking-wider">L&apos;AGENT RIDEMIND ANALYSE TA SESSION...</div>
                 <div className="text-gray-500 text-xs mt-2">Quelques secondes</div>
               </div>
             )}
@@ -129,20 +129,46 @@ export default function VideoAnalysis() {
 
         {history.length > 0 && (
           <div className="mt-12">
-            <div className="font-display text-2xl mb-4">HISTORIQUE</div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-display text-2xl">HISTORIQUE</div>
+              {result && (
+                <button
+                  data-testid="new-analysis-btn"
+                  onClick={() => { setResult(null); setDescription(""); setFile(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  className="text-xs font-display tracking-wider text-[#1E6BFF] hover:underline"
+                >
+                  + NOUVELLE ANALYSE
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {history.slice(0, 4).map((h) => (
-                <div key={h.analysis_id} className="p-4 border border-[#262626] bg-[#0A0A0A] text-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-display text-[#1E6BFF] text-xs tracking-wider">{h.sport.toUpperCase()} · {h.level.toUpperCase()}</span>
-                    <span className="text-xs text-gray-500">{new Date(h.created_at).toLocaleDateString("fr-FR")}</span>
-                  </div>
-                  <div className="text-gray-300 line-clamp-2 mb-2">{h.description}</div>
-                  <div className="text-gray-400 text-xs line-clamp-3">
-                    {h.structured?.headline || h.feedback?.slice(0, 200)}
-                  </div>
-                </div>
-              ))}
+              {history.slice(0, 6).map((h) => {
+                const isActive = result?.analysis_id === h.analysis_id;
+                return (
+                  <button
+                    type="button"
+                    key={h.analysis_id}
+                    data-testid={`history-item-${h.analysis_id}`}
+                    onClick={() => {
+                      setResult(h);
+                      window.scrollTo({ top: 300, behavior: "smooth" });
+                    }}
+                    className={`text-left p-4 border bg-[#0A0A0A] text-sm transition hover:border-[#1E6BFF] hover:-translate-y-0.5 ${isActive ? "border-[#1E6BFF] ring-2 ring-[#1E6BFF]/30" : "border-[#262626]"}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-display text-[#1E6BFF] text-xs tracking-wider">{h.sport.toUpperCase()} · {h.level.toUpperCase()}</span>
+                      <span className="text-xs text-gray-500">{new Date(h.created_at).toLocaleDateString("fr-FR")}</span>
+                    </div>
+                    <div className="text-gray-300 line-clamp-2 mb-2">{h.description}</div>
+                    <div className="text-gray-400 text-xs line-clamp-3">
+                      {h.structured?.headline || h.feedback?.slice(0, 200)}
+                    </div>
+                    {isActive && (
+                      <div className="mt-2 text-[10px] font-display tracking-widest text-[#1E6BFF]">▸ AFFICHÉ CI-DESSUS</div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
