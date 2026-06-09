@@ -1,0 +1,130 @@
+{
+  "project_name": "RIDEMIND",
+  "theme": "dark",
+  "archetype": "Performance Pro (Archetype 2)",
+  "emotional_tone": "Cinematic, elite athleticism, high-energy, premium coaching.",
+  "brand": {
+    "name": "RIDEMIND",
+    "tagline": "PROGRESS YOUR RIDE",
+    "logo_url": "https://customer-assets.emergentagent.com/job_wave-coach-3/artifacts/pde885i4_ChatGPT%20Image%2023%20mai%202026%20a%CC%80%2014_58_13.png"
+  },
+  "colors": {
+    "background": "#000000",
+    "surface": "#0A0A0A",
+    "surface_elevated": "#141414",
+    "primary": "#1E6BFF",
+    "primary_hover": "#1751C4",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A3A3A3",
+    "border": "#262626",
+    "border_focus": "#1E6BFF",
+    "error": "#FF3B30",
+    "success": "#34C759"
+  },
+  "typography": {
+    "headings": {
+      "family": "Barlow Condensed, sans-serif",
+      "weight": "900",
+      "tracking": "tracking-tighter",
+      "transform": "uppercase",
+      "usage": "Use for all H1, H2, H3. Give it a bold, aggressive athletic feel."
+    },
+    "body": {
+      "family": "Inter, sans-serif",
+      "weight": "400",
+      "tracking": "tracking-normal",
+      "usage": "Use for readable paragraphs, descriptions, and UI labels."
+    },
+    "scales": {
+      "h1": "text-5xl md:text-6xl lg:text-7xl",
+      "h2": "text-3xl md:text-4xl lg:text-5xl",
+      "h3": "text-2xl md:text-3xl",
+      "body": "text-base md:text-lg",
+      "small": "text-sm text-gray-400"
+    }
+  },
+  "spacing_and_layout": {
+    "general": "Generous spacing. Use p-8, p-12, p-16. Containers must have internal padding.",
+    "grids": "Use 'Tetris' or 'Bento' style asymmetry for feature showcases.",
+    "max_width": "max-w-7xl mx-auto",
+    "hero": "Full height (min-h-[80vh]). Overlay: bg-gradient-to-r from-black/80 via-black/40 to-transparent."
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#1E6BFF] text-white hover:bg-[#1E6BFF]/90 font-bold uppercase tracking-wider rounded-none",
+      "secondary": "bg-transparent border-2 border-white text-white hover:bg-white hover:text-black font-bold uppercase tracking-wider rounded-none"
+    },
+    "cards": {
+      "default": "bg-[#0A0A0A] border border-[#262626] rounded-none p-6 md:p-8 transition-all duration-300 hover:border-[#1E6BFF]/50",
+      "premium_pricing": "bg-[#141414] border-2 border-[#1E6BFF] relative overflow-hidden ring-4 ring-[#1E6BFF]/20"
+    },
+    "glassmorphism": {
+      "header": "backdrop-blur-xl bg-black/80 border-b border-white/10"
+    }
+  },
+  "motion_and_interaction": {
+    "hover": "High-contrast hover states. Cards slightly lift (-translate-y-1) and gain subtle blue border.",
+    "buttons": "Scale up slightly (scale-105) on hover, active state scales down (scale-95).",
+    "loading": "Use skeleton screens matching card background (#141414)."
+  },
+  "imagery": {
+    "hero": {
+      "url": "https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxraXRlc3VyZmluZyUyMGFjdGlvbnxlbnwwfHx8fDE3ODEwMDYzNzh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Cinematic kitesurfing at sunset",
+      "usage": "Landing page background. Apply heavy dark gradient overlay from left."
+    },
+    "courses": {
+      "url": "https://images.unsplash.com/photo-1578060124065-41f863eb9ebe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwzfHxraXRlc3VyZmluZyUyMGFjdGlvbnxlbnwwfHx8fDE3ODEwMDYzNzh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Wakeboarding action",
+      "usage": "Course library thumbnail or feature highlight."
+    },
+    "video_analysis": {
+      "url": "https://images.unsplash.com/photo-1601900957092-ae3e67b47b03?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwxfHx3YWtlYm9hcmQlMjBqdW1wJTIwb2NlYW58ZW58MHx8fHwxNzgxMDA2Mzc4fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Wakeboard jump in ocean",
+      "usage": "Showcase for the AI video technique analysis feature."
+    },
+    "spot_recommender": {
+      "url": "https://images.unsplash.com/photo-1632990848833-2e7007adb204?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwzfHx3YWtlYm9hcmQlMjBqdW1wJTIwb2NlYW58ZW58MHx8fHwxNzgxMDA2Mzc4fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Surfing large wave",
+      "usage": "Background for Spot Recommender section/card."
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "Sharp, minimal, bold. Stroke width 2."
+  },
+  "key_features_and_flows": {
+    "pricing": {
+      "standard": {
+        "price": "9.99€",
+        "name": "Standard Plan",
+        "features": ["Video Analysis", "Access to Kite Courses (All Levels)"]
+      },
+      "premium": {
+        "price": "15.99€",
+        "name": "Premium Plan",
+        "features": ["Video Analysis", "Access to Kite Courses", "AI Spot Recommender (Based on weight, gear, wind, level)"],
+        "highlight": true
+      }
+    },
+    "dashboard": {
+      "navigation": ["Overview", "Courses", "Video Analysis", "Spot Recommender"],
+      "video_analysis_mock": "Allow video upload. Mock an AI feedback response highlighting stance, pop, or landing.",
+      "spot_recommender_ui": "Form with inputs: User Weight (kg), Board/Kite Size, Skill Level (Beginner/Intermediate/Pro), Target Date. Output: Suggested spot with wind conditions."
+    }
+  },
+  "accessibility_and_testing": {
+    "test_attributes": "Add `data-testid` to all actionable elements (e.g., `data-testid='pricing-subscribe-premium'`).",
+    "contrast": "Ensure white text on #1E6BFF has >4.5:1 contrast. Adjust blue if needed."
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react' for icons if not present.",
+    "Use raw HTML/Tailwind for marketing layouts. Use heavily customized Shadcn components for Dashboard and interactive elements.",
+    "Avoid border-radius (use rounded-none or rounded-sm max) to maintain the brutalist/pro-sport aesthetic.",
+    "Integrate Google OAuth via Emergent Auth for login.",
+    "Build the Spot Recommender as a premium-gated feature. Show a lock icon or redirect to upgrade for Standard users.",
+    "Ensure the hero image uses a gradient mask so the pure white text is perfectly legible.",
+    "Use the specific brand logo provided.",
+    "Do not use generic SaaS template designs. Stick strictly to the dark/cinematic 'Performance Pro' archetype."
+  ]
+}
