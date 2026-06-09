@@ -21,15 +21,9 @@ export default function Navbar() {
       data-testid="navbar"
       className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl ${isLanding ? "bg-black/40" : "bg-black/80"} border-b border-white/10`}
     >
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link to="/" data-testid="nav-logo" className="flex items-center gap-3">
-          <img src={LOGO_URL} alt="RIDEMIND" className="h-10 w-10 object-contain" />
-          <div className="flex flex-col leading-none">
-            <span className="font-display text-2xl tracking-tight">
-              RIDE<span className="text-[#1E6BFF]">MIND</span>
-            </span>
-            <span className="text-[10px] tracking-[0.25em] text-gray-400 uppercase">Progress your ride</span>
-          </div>
+      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+        <Link to="/" data-testid="nav-logo" className="flex items-center">
+          <img src={LOGO_URL} alt="RIDEMIND" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 font-display text-sm tracking-wider">
