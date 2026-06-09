@@ -23,7 +23,7 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
         <Link to="/" data-testid="nav-logo" className="flex items-center -my-2">
-          <img src={LOGO_URL} alt="RIDEMIND" className="h-24 w-24 md:h-32 md:w-32 object-contain" />
+          <img src={LOGO_URL} alt="RIDEMIND" className="h-24 w-24 md:h-32 md:w-32 object-contain" style={{ mixBlendMode: "screen" }} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 font-display text-sm tracking-wider">
