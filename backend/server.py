@@ -602,6 +602,90 @@ async def spot_recommend(req: SpotRecommendRequest, request: Request):
 # ============================================================
 # Health
 # ============================================================
+@api.get("/spots/weekend-forecast")
+async def spots_weekend_forecast(user_lat: Optional[float] = None, user_lon: Optional[float] = None, max_distance_km: Optional[float] = None):
+    """Public endpoint: returns wind forecast for the upcoming weekend (Sat+Sun) for all spots.
+    Used by the SEO page 'Meilleurs spots de kitesurf ce week-end'."""
+    from datetime import date
+
+    today = date.today()
+    # Find next Saturday (or today if today is Saturday)
+    days_to_sat = (5 - today.weekday()) % 7
+    if days_to_sat == 0 and today.weekday() != 5:
+        days_to_sat = 7
+    saturday = today + timedelta(days=days_to_sat)
+    sunday = saturday + timedelta(days=1)
+
+    # Filter spots by distance if provided
+    candidate = SPOTS
+    if user_lat is not None and user_lon is not None:
+        candidate = [
+            {**s, "distance_km": round(haversine_km(user_lat, user_lon, s["lat"], s["lon"]), 1)}
+            for s in SPOTS
+        ]
+        if max_distance_km:
+            candidate = [s for s in candidate if s["distance_km"] <= max_distance_km]
+
+    results = []
+    async with httpx.AsyncClient(timeout=15.0) as hc:
+        for s in candidate:
+            try:
+                r = await hc.get(
+                    "https://api.open-meteo.com/v1/forecast",
+                    params={
+                        "latitude": s["lat"], "longitude": s["lon"],
+                        "hourly": "wind_speed_10m,wind_direction_10m",
+                        "wind_speed_unit": "kn",
+                        "start_date": saturday.isoformat(),
+                        "end_date": sunday.isoformat(),
+                        "timezone": "auto",
+                    },
+                )
+                d = r.json().get("hourly", {})
+                speeds = d.get("wind_speed_10m") or []
+                if not speeds:
+                    continue
+                # Compute stats only for "rideable hours" between 9h and 19h local
+                # Open-Meteo returns 48 hours of data (Sat 0h - Sun 23h). We'll filter via index.
+                # Index 9-18 (Sat day), 33-42 (Sun day)
+                day_hours = list(range(9, 19)) + list(range(33, 43))
+                day_speeds = [speeds[i] for i in day_hours if i < len(speeds) and speeds[i] is not None]
+                if not day_speeds:
+                    continue
+                avg_wind = sum(day_speeds) / len(day_speeds)
+                max_wind = max(day_speeds)
+                ideal_min, ideal_max = s["ideal_kts"]
+                rideable_hours = sum(1 for w in day_speeds if ideal_min <= w <= ideal_max)
+                # Score: rideable hours weighted by avg quality
+                score = rideable_hours * 5
+                if ideal_min <= avg_wind <= ideal_max:
+                    score += 30
+                # Per-day split
+                sat_speeds = [speeds[i] for i in range(9, 19) if i < len(speeds) and speeds[i] is not None]
+                sun_speeds = [speeds[i] for i in range(33, 43) if i < len(speeds) and speeds[i] is not None]
+                results.append({
+                    **s,
+                    "saturday": saturday.isoformat(),
+                    "sunday": sunday.isoformat(),
+                    "avg_wind_kts": round(avg_wind, 1),
+                    "max_wind_kts": round(max_wind, 1),
+                    "sat_avg_kts": round(sum(sat_speeds) / len(sat_speeds), 1) if sat_speeds else None,
+                    "sun_avg_kts": round(sum(sun_speeds) / len(sun_speeds), 1) if sun_speeds else None,
+                    "rideable_hours": rideable_hours,
+                    "score": round(score, 1),
+                })
+            except Exception:
+                continue
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return {
+        "saturday": saturday.isoformat(),
+        "sunday": sunday.isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "spots": results,
+    }
+
+
 @api.get("/")
 async def root():
     return {"app": "RIDEMIND", "status": "ok"}

@@ -11,6 +11,7 @@ import VideoAnalysis from "@/pages/VideoAnalysis";
 import SpotRecommender from "@/pages/SpotRecommender";
 import AuthCallback from "@/pages/AuthCallback";
 import PaymentSuccess from "@/pages/PaymentSuccess";
+import WeekendSpots from "@/pages/WeekendSpots";
 import { MentionsLegales, CGU, Confidentialite, Cookies } from "@/pages/Legal";
 import { Toaster } from "sonner";
 
@@ -31,6 +32,7 @@ function AppRouter() {
         <Route path="/courses" element={<Courses />} />
         <Route path="/video-analysis" element={<VideoAnalysis />} />
         <Route path="/spot-recommender" element={<SpotRecommender />} />
+        <Route path="/meilleurs-spots-kitesurf-weekend" element={<WeekendSpots />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />

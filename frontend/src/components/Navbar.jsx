@@ -32,6 +32,10 @@ export default function Navbar() {
           <Link to="/courses" data-testid="nav-courses" className="hover:text-[#1E6BFF] transition">COURS</Link>
           <Link to="/video-analysis" data-testid="nav-analysis" className="hover:text-[#1E6BFF] transition">ANALYSE</Link>
           <Link to="/spot-recommender" data-testid="nav-spots" className="hover:text-[#1E6BFF] transition">SPOTS</Link>
+          <Link to="/meilleurs-spots-kitesurf-weekend" data-testid="nav-weekend" className="hover:text-[#1E6BFF] transition relative">
+            WEEK-END
+            <span className="absolute -top-1.5 -right-3 text-[7px] tracking-widest bg-[#1E6BFF] text-white px-1 py-0.5">LIVE</span>
+          </Link>
           {user && (
             <Link to="/dashboard" data-testid="nav-dashboard" className="hover:text-[#1E6BFF] transition">DASHBOARD</Link>
           )}
