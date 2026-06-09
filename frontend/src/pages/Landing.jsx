@@ -7,7 +7,7 @@ const HERO_IMAGES = [
   { url: "https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "KITESURF" },
   { url: "https://images.unsplash.com/photo-1666032234128-abc3e45bd1dc?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKEBOARD" },
   { url: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "SURF" },
-  { url: "https://images.unsplash.com/photo-1669173733012-9288d98b48c5?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKE CABLE" },
+  { url: "https://images.unsplash.com/photo-1752170053218-5f05ccfbee4e?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "WAKE CABLE" },
   { url: "https://images.unsplash.com/photo-1672699303810-0b55ddad76b5?fm=jpg&q=85&w=2000&auto=format&fit=crop", label: "FOIL" },
 ];
 const VIDEO_IMG = "https://images.unsplash.com/photo-1601900957092-ae3e67b47b03?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200";
