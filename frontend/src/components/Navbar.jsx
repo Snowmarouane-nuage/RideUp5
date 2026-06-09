@@ -29,13 +29,11 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-8 font-display text-sm tracking-wider">
           <Link to="/" data-testid="nav-home" className="hover:text-[#1E6BFF] transition">ACCUEIL</Link>
           <Link to="/pricing" data-testid="nav-pricing" className="hover:text-[#1E6BFF] transition">ABONNEMENTS</Link>
+          <Link to="/courses" data-testid="nav-courses" className="hover:text-[#1E6BFF] transition">COURS</Link>
+          <Link to="/video-analysis" data-testid="nav-analysis" className="hover:text-[#1E6BFF] transition">ANALYSE</Link>
+          <Link to="/spot-recommender" data-testid="nav-spots" className="hover:text-[#1E6BFF] transition">SPOTS</Link>
           {user && (
-            <>
-              <Link to="/dashboard" data-testid="nav-dashboard" className="hover:text-[#1E6BFF] transition">DASHBOARD</Link>
-              <Link to="/courses" data-testid="nav-courses" className="hover:text-[#1E6BFF] transition">COURS</Link>
-              <Link to="/video-analysis" data-testid="nav-analysis" className="hover:text-[#1E6BFF] transition">ANALYSE</Link>
-              <Link to="/spot-recommender" data-testid="nav-spots" className="hover:text-[#1E6BFF] transition">SPOTS</Link>
-            </>
+            <Link to="/dashboard" data-testid="nav-dashboard" className="hover:text-[#1E6BFF] transition">DASHBOARD</Link>
           )}
         </nav>
 
