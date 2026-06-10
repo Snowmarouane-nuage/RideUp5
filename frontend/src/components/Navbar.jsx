@@ -43,7 +43,7 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
         <Link to="/" data-testid="nav-home-anchor" className="font-display text-xl tracking-wider hover:text-[#1E6BFF] transition">
-          RIDEMIND
+          RIDE’UP
         </Link>
 
         {/* Desktop nav */}

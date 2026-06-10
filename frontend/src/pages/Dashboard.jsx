@@ -109,7 +109,7 @@ export default function Dashboard() {
         {/* Action cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card to="/coach" icon={<MessageCircle className="h-7 w-7" />} title="COACH IA" desc="Roadmap perso + chat trick-par-trick." locked={!hasPlan} testId="card-coach" />
-          <Card to="/video-analysis" icon={<Video className="h-7 w-7" />} title="ANALYSE VIDÉO" desc="Décrypte tes sessions avec l'agent RIDEMIND." locked={!hasPlan} testId="card-video" />
+          <Card to="/video-analysis" icon={<Video className="h-7 w-7" />} title="ANALYSE VIDÉO" desc="Décrypte tes sessions avec l'agent RIDE’UP." locked={!hasPlan} testId="card-video" />
           <Card to="/courses" icon={<BookOpen className="h-7 w-7" />} title="COURS" desc="Progresse avec nos modules structurés." locked={!hasPlan} testId="card-courses" />
           <Card to="/spot-recommender" icon={<MapPin className="h-7 w-7" />} title="SPOT FINDER" desc="L'IA trouve ton spot idéal selon les conditions." locked={!isPremium} premium testId="card-spots" />
         </div>

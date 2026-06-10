@@ -22,7 +22,7 @@ export function MentionsLegales() {
   return (
     <LegalLayout title="MENTIONS LÉGALES">
       <h2 className="font-display text-2xl text-white">1. Éditeur du site</h2>
-      <p>RIDEMIND<br/>[Raison sociale à compléter]<br/>[Adresse postale à compléter]<br/>Email : GetRideMind@gmail.com<br/>SIRET : [à compléter]<br/>RCS : [à compléter]<br/>N° TVA intracommunautaire : [à compléter]</p>
+      <p>RIDE’UP<br/>[Raison sociale à compléter]<br/>[Adresse postale à compléter]<br/>Email : GetRideMind@gmail.com<br/>SIRET : [à compléter]<br/>RCS : [à compléter]<br/>N° TVA intracommunautaire : [à compléter]</p>
 
       <h2 className="font-display text-2xl text-white mt-8">2. Directeur de publication</h2>
       <p>[Nom du responsable légal à compléter]</p>
@@ -31,7 +31,7 @@ export function MentionsLegales() {
       <p>Le site est hébergé par Emergent (infrastructure cloud Kubernetes).</p>
 
       <h2 className="font-display text-2xl text-white mt-8">4. Propriété intellectuelle</h2>
-      <p>L'ensemble des contenus présents sur le site RIDEMIND (textes, images, logos, vidéos pédagogiques, design, analyses IA) est protégé par le droit d'auteur et reste la propriété exclusive de l'éditeur ou de ses partenaires. Toute reproduction sans autorisation préalable est interdite.</p>
+      <p>L'ensemble des contenus présents sur le site RIDE’UP (textes, images, logos, vidéos pédagogiques, design, analyses IA) est protégé par le droit d'auteur et reste la propriété exclusive de l'éditeur ou de ses partenaires. Toute reproduction sans autorisation préalable est interdite.</p>
 
       <h2 className="font-display text-2xl text-white mt-8">5. Contact</h2>
       <p>Pour toute question : GetRideMind@gmail.com</p>
@@ -43,20 +43,20 @@ export function CGU() {
   return (
     <LegalLayout title="CONDITIONS GÉNÉRALES">
       <h2 className="font-display text-2xl text-white">1. Objet</h2>
-      <p>RIDEMIND est une plateforme de coaching personnel en ligne dédiée aux sports de glisse (kitesurf, wakeboard, foil, surf). Le service inclut : analyse vidéo par IA, cours en ligne, recommandation de spots (offre Premium).</p>
+      <p>RIDE’UP est une plateforme de coaching personnel en ligne dédiée aux sports de glisse (kitesurf, wakeboard, foil, surf). Le service inclut : analyse vidéo par IA, cours en ligne, recommandation de spots (offre Premium).</p>
 
       <h2 className="font-display text-2xl text-white mt-8">2. Abonnements</h2>
       <ul className="list-disc pl-6 space-y-2">
         <li><strong>Standard</strong> : 9,99 € TTC / mois — analyse vidéo IA + accès aux cours</li>
         <li><strong>Premium</strong> : 15,99 € TTC / mois — Standard + Spot Finder IA</li>
       </ul>
-      <p>Le paiement est traité par Stripe. Aucune donnée bancaire n'est stockée sur les serveurs RIDEMIND.</p>
+      <p>Le paiement est traité par Stripe. Aucune donnée bancaire n'est stockée sur les serveurs RIDE’UP.</p>
 
       <h2 className="font-display text-2xl text-white mt-8">3. Résiliation</h2>
       <p>L'abonnement est sans engagement. Tu peux le résilier à tout moment depuis ton espace client. L'accès reste actif jusqu'à la fin de la période payée.</p>
 
       <h2 className="font-display text-2xl text-white mt-8">4. Limitation de responsabilité</h2>
-      <p>Les sports de glisse comportent des risques. Les conseils délivrés (IA ou cours) sont à titre informatif et pédagogique. RIDEMIND ne saurait être tenu responsable d'un accident ou d'une blessure survenue lors d'une session. Le pratiquant reste seul responsable de la sécurité de sa pratique, du respect des règles locales et de l'évaluation des conditions sur place.</p>
+      <p>Les sports de glisse comportent des risques. Les conseils délivrés (IA ou cours) sont à titre informatif et pédagogique. RIDE’UP ne saurait être tenu responsable d'un accident ou d'une blessure survenue lors d'une session. Le pratiquant reste seul responsable de la sécurité de sa pratique, du respect des règles locales et de l'évaluation des conditions sur place.</p>
 
       <h2 className="font-display text-2xl text-white mt-8">5. Droit applicable</h2>
       <p>Les présentes CGU sont régies par le droit français. Tout litige relèvera de la compétence des tribunaux français.</p>
@@ -68,7 +68,7 @@ export function Confidentialite() {
   return (
     <LegalLayout title="POLITIQUE DE CONFIDENTIALITÉ">
       <h2 className="font-display text-2xl text-white">1. Données collectées</h2>
-      <p>Lorsque tu utilises RIDEMIND, nous collectons :</p>
+      <p>Lorsque tu utilises RIDE’UP, nous collectons :</p>
       <ul className="list-disc pl-6 space-y-2">
         <li>Identifiants Google (nom, email, photo de profil) via OAuth</li>
         <li>Vidéos téléversées pour l'analyse IA</li>
@@ -100,7 +100,7 @@ export function Cookies() {
   return (
     <LegalLayout title="POLITIQUE COOKIES">
       <h2 className="font-display text-2xl text-white">1. Qu'est-ce qu'un cookie ?</h2>
-      <p>Un cookie est un petit fichier stocké sur ton appareil quand tu visites un site. RIDEMIND utilise des cookies uniquement essentiels au fonctionnement du service.</p>
+      <p>Un cookie est un petit fichier stocké sur ton appareil quand tu visites un site. RIDE’UP utilise des cookies uniquement essentiels au fonctionnement du service.</p>
 
       <h2 className="font-display text-2xl text-white mt-8">2. Cookies utilisés</h2>
       <ul className="list-disc pl-6 space-y-2">

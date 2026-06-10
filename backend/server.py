@@ -1,4 +1,4 @@
-"""RIDEMIND backend - Coaching platform for kitesurf/wakeboard/foil/surf."""
+"""RIDE’UP backend - Coaching platform for kitesurf/wakeboard/foil/surf."""
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Cookie, UploadFile, File, Form, Depends
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -25,7 +25,7 @@ db = client[os.environ['DB_NAME']]
 UPLOAD_DIR = ROOT_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-app = FastAPI(title="RIDEMIND API")
+app = FastAPI(title="RIDE’UP API")
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO)
@@ -359,7 +359,7 @@ async def video_analysis(
     from emergentintegrations.llm.chat import LlmChat, UserMessage
 
     system_prompt = (
-        "Tu es RIDEMIND COACH, un coach mondial de sports de glisse (kitesurf, wakeboard, foil, surf). "
+        "Tu es RIDE’UP COACH, un coach mondial de sports de glisse (kitesurf, wakeboard, foil, surf). "
         "Tu reçois la description d'une session ou d'une figure et tu dois fournir une analyse "
         "technique précise et structurée. Tu DOIS répondre uniquement avec un objet JSON valide "
         "(pas de markdown, pas de ```json, juste l'objet), respectant strictement ce schéma :\n"
@@ -790,7 +790,7 @@ async def spots_weekend_forecast(user_lat: Optional[float] = None, user_lon: Opt
 
 @api.get("/")
 async def root():
-    return {"app": "RIDEMIND", "status": "ok"}
+    return {"app": "RIDE’UP", "status": "ok"}
 
 
 # ============================================================
@@ -826,7 +826,7 @@ async def coach_onboarding(payload: CoachOnboarding, request: Request):
         api_key=os.environ["EMERGENT_LLM_KEY"],
         session_id=f"coach_ob_{uuid.uuid4().hex}",
         system_message=(
-            "Tu es RIDEMIND COACH, un coach personnel de kitesurf. Pour le rider donné, "
+            "Tu es RIDE’UP COACH, un coach personnel de kitesurf. Pour le rider donné, "
             "construis une roadmap de 6 à 9 tricks ordonnés du plus simple au plus avancé, "
             "à partir de son niveau et de ses tricks déjà acquis. Réponds UNIQUEMENT par un objet JSON valide :\n"
             "{\n"
@@ -930,7 +930,7 @@ async def coach_chat(payload: CoachChatRequest, request: Request):
     acquired = ', '.join(profile['current_tricks'] + completed) if (profile['current_tricks'] or completed) else 'aucun'
     goal = profile.get('goal') or 'progression continue'
     system = (
-        f"Tu es RIDEMIND COACH, coach personnel kitesurf du rider. Niveau actuel: {profile['level']}. "
+        f"Tu es RIDE’UP COACH, coach personnel kitesurf du rider. Niveau actuel: {profile['level']}. "
         f"Tricks déjà acquis: {acquired}. "
         f"Prochain trick visé: {next_trick_or_default}. "
         f"Objectif rider: {goal}. "
@@ -1030,7 +1030,7 @@ async def dashboard_stats(request: Request):
                 api_key=os.environ["EMERGENT_LLM_KEY"],
                 session_id=f"dash_{user_id}_{now.date().isoformat()}",
                 system_message=(
-                    "Tu es RIDEMIND COACH. Tu écris un message d'encouragement court (2-3 phrases) "
+                    "Tu es RIDE’UP COACH. Tu écris un message d'encouragement court (2-3 phrases) "
                     "pour le rider, en t'appuyant sur ses stats. Ton positif, motivant, sport. "
                     "REGLES DE STYLE STRICTES: pas de markdown, pas d'emojis, texte courant fluide."
                 ),
@@ -1047,7 +1047,7 @@ async def dashboard_stats(request: Request):
         except Exception:
             encouragement = "Continue comme ça, chaque session compte. La régularité bat le talent."
     else:
-        encouragement = "Bienvenue dans RIDEMIND. Commence par configurer ton coach personnel, puis lance ta première analyse vidéo."
+        encouragement = "Bienvenue dans RIDE’UP. Commence par configurer ton coach personnel, puis lance ta première analyse vidéo."
 
     # Recent activity
     recent = sorted(analyses, key=lambda a: a["created_at"], reverse=True)[:3]

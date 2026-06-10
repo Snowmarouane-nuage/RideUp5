@@ -155,7 +155,7 @@ export default function Landing() {
                   <Video className="h-3 w-3" /> ANALYSE IA
                 </div>
                 <h3 className="font-display text-3xl md:text-4xl mb-2">DÉCRYPTE TES SESSIONS</h3>
-                <p className="text-gray-300 max-w-md">Upload ta vidéo, décris ta question. L'agent RIDEMIND te donne un retour technique structuré: diagnostic, corrections, drills.</p>
+                <p className="text-gray-300 max-w-md">Upload ta vidéo, décris ta question. L'agent RIDE’UP te donne un retour technique structuré: diagnostic, corrections, drills.</p>
               </div>
             </div>
 
@@ -213,7 +213,7 @@ export default function Landing() {
           <h2 className="font-display text-4xl md:text-6xl mb-6">
             T'ES PRÊT À <span className="text-[#1E6BFF]">PROGRESSER</span> ?
           </h2>
-          <p className="text-gray-400 mb-10 text-lg">Rejoins RIDEMIND. Coaching personnel. Résultats mesurables.</p>
+          <p className="text-gray-400 mb-10 text-lg">Rejoins RIDE’UP. Coaching personnel. Résultats mesurables.</p>
           <button
             data-testid="bottom-cta"
             onClick={handleStart}

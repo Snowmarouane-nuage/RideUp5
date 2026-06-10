@@ -58,7 +58,7 @@ export default function VideoAnalysis() {
       <div className="max-w-6xl mx-auto">
         <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-2">COACHING IA</div>
         <h1 className="font-display text-4xl md:text-6xl mb-3">ANALYSE <span className="text-[#1E6BFF]">VIDÉO</span></h1>
-        <p className="text-gray-400 mb-10 max-w-2xl">Upload ta vidéo (optionnel) et décris la figure ou la session. L&apos;agent RIDEMIND te livre un retour technique structuré.</p>
+        <p className="text-gray-400 mb-10 max-w-2xl">Upload ta vidéo (optionnel) et décris la figure ou la session. L&apos;agent RIDE’UP te livre un retour technique structuré.</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Form */}
@@ -113,13 +113,13 @@ export default function VideoAnalysis() {
             {!loading && !result && (
               <div className="p-12 border border-dashed border-[#262626] bg-[#0A0A0A] text-center text-gray-500">
                 <Sparkles className="h-10 w-10 text-[#1E6BFF] mx-auto mb-3" />
-                Le retour de l&apos;agent RIDEMIND apparaîtra ici.
+                Le retour de l&apos;agent RIDE’UP apparaîtra ici.
               </div>
             )}
             {loading && (
               <div className="p-12 border border-[#262626] bg-[#0A0A0A] text-center">
                 <div className="h-12 w-12 mx-auto rounded-full border-4 border-[#1E6BFF] border-t-transparent animate-spin mb-4" />
-                <div className="text-gray-300 font-display tracking-wider">L&apos;AGENT RIDEMIND ANALYSE TA SESSION...</div>
+                <div className="text-gray-300 font-display tracking-wider">L&apos;AGENT RIDE’UP ANALYSE TA SESSION...</div>
                 <div className="text-gray-500 text-xs mt-2">Quelques secondes</div>
               </div>
             )}

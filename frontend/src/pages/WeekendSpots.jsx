@@ -12,7 +12,7 @@ export default function WeekendSpots() {
 
   useEffect(() => {
     // SEO meta tags (basic — for production use react-helmet-async)
-    document.title = "Meilleurs spots de kitesurf ce week-end · RIDEMIND";
+    document.title = "Meilleurs spots de kitesurf ce week-end · RIDE’UP";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");
@@ -95,7 +95,7 @@ export default function WeekendSpots() {
                 <Sparkles className="h-12 w-12 text-[#1E6BFF] mx-auto mb-4" />
                 <h2 className="font-display text-3xl md:text-5xl mb-4">VEUX-TU TON SPOT <span className="text-[#1E6BFF]">SUR-MESURE</span> ?</h2>
                 <p className="text-gray-300 max-w-2xl mx-auto mb-8">
-                  Avec RIDEMIND Premium, l'IA croise <strong>ta localisation</strong>, ton <strong>poids</strong>, ton <strong>matériel</strong> et ton <strong>niveau</strong> pour te recommander le spot le plus safe et adapté chaque jour de l'année.
+                  Avec RIDE’UP Premium, l'IA croise <strong>ta localisation</strong>, ton <strong>poids</strong>, ton <strong>matériel</strong> et ton <strong>niveau</strong> pour te recommander le spot le plus safe et adapté chaque jour de l'année.
                 </p>
                 <Link
                   to="/pricing"
@@ -115,7 +115,7 @@ export default function WeekendSpots() {
                 </p>
                 <h3 className="font-display text-xl text-white mt-6 mb-3">Pourquoi le bon spot, c'est important ?</h3>
                 <p>
-                  Un kitesurfeur débutant en Tramontane à 30 kts à Leucate, ce n'est pas la même session qu'un Cumbuco à 18 kts. Choisir un spot adapté à son niveau et son matériel, c'est la base d'une session safe et progressive. RIDEMIND t'aide à ne plus te tromper.
+                  Un kitesurfeur débutant en Tramontane à 30 kts à Leucate, ce n'est pas la même session qu'un Cumbuco à 18 kts. Choisir un spot adapté à son niveau et son matériel, c'est la base d'une session safe et progressive. RIDE’UP t'aide à ne plus te tromper.
                 </p>
               </div>
             </>

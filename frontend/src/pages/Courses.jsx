@@ -20,7 +20,7 @@ export default function Courses() {
     <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-2">BIBLIOTHÈQUE</div>
-        <h1 className="font-display text-4xl md:text-6xl mb-6">COURS <span className="text-[#1E6BFF]">RIDEMIND</span></h1>
+        <h1 className="font-display text-4xl md:text-6xl mb-6">COURS <span className="text-[#1E6BFF]">RIDE’UP</span></h1>
         <p className="text-gray-400 max-w-2xl mb-10">Modules vidéo structurés pour progresser, du débutant à l'avancé. Kitesurf disponible aujourd'hui · Wakeboard et Foil bientôt.</p>
 
         <div className="flex flex-wrap gap-2 mb-10">
