@@ -36,7 +36,7 @@ export default function AuthCallback() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="text-center">
-        <img src={LOGO_URL} alt="RIDE’UP" className="h-12 mx-auto animate-pulse" />
+        <img src={LOGO_URL} alt="Ride’Up" className="h-16 mx-auto animate-pulse" />
         <div className="font-display text-2xl mt-6">CONNEXION EN COURS...</div>
         <div className="text-gray-400 text-sm mt-2">Préparation de ta session</div>
       </div>

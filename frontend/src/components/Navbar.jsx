@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { LOGO_URL } from "@/lib/api";
 import { LogOut, User, Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
@@ -41,9 +42,9 @@ export default function Navbar() {
       data-testid="navbar"
       className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl ${isLanding ? "bg-black/40" : "bg-black/80"} border-b border-white/10`}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-        <Link to="/" data-testid="nav-home-anchor" className="font-display text-xl tracking-wider hover:text-[#9AB8FF] transition">
-          RIDE’UP
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+        <Link to="/" data-testid="nav-logo" className="flex items-center">
+          <img src={LOGO_URL} alt="Ride’Up" className="h-12 md:h-16 object-contain" />
         </Link>
 
         {/* Desktop nav */}
