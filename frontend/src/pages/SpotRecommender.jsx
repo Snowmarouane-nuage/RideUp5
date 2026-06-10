@@ -29,12 +29,12 @@ export default function SpotRecommender() {
   if (!isPremium) {
     return (
       <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
-        <div className="max-w-3xl mx-auto text-center p-12 border-2 border-[#1E6BFF]/40 bg-[#0A0A0A]">
-          <Crown className="h-16 w-16 text-[#1E6BFF] mx-auto mb-6" />
+        <div className="max-w-3xl mx-auto text-center p-12 border-2 border-[#9AB8FF]/40 bg-[#0A0A0A]">
+          <Crown className="h-16 w-16 text-[#9AB8FF] mx-auto mb-6" />
           <h1 className="font-display text-3xl md:text-5xl mb-4">SPOT FINDER · PREMIUM</h1>
           <p className="text-gray-400 mb-2">L&apos;algo croise ton poids, ton matériel, ta localisation et le vent réel pour te proposer le spot idéal.</p>
           <p className="text-gray-400 mb-8">Disponible uniquement sur l&apos;abonnement Premium (15.99€/mois).</p>
-          <Link data-testid="spot-upgrade" to="/pricing" className="inline-block bg-[#1E6BFF] hover:bg-[#1751C4] text-white px-8 py-4 font-display tracking-wider">
+          <Link data-testid="spot-upgrade" to="/pricing" className="inline-block bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-8 py-4 font-display tracking-wider">
             PASSER PREMIUM
           </Link>
         </div>
@@ -120,22 +120,22 @@ export default function SpotRecommender() {
   return (
     <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-2">PREMIUM · SPOT FINDER</div>
-        <h1 className="font-display text-4xl md:text-6xl mb-3">LE BON SPOT, <span className="text-[#1E6BFF]">LE BON JOUR</span></h1>
+        <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-2">PREMIUM · SPOT FINDER</div>
+        <h1 className="font-display text-4xl md:text-6xl mb-3">LE BON SPOT, <span className="text-[#9AB8FF]">LE BON JOUR</span></h1>
         <p className="text-gray-400 max-w-3xl mb-10">Données vent en temps réel via Open-Meteo. L&apos;IA score les spots selon ton matériel, ton niveau, et la distance que tu peux parcourir.</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <form onSubmit={submit} className="lg:col-span-1 p-8 border border-[#262626] bg-[#0A0A0A] space-y-4" data-testid="spot-form">
 
             {/* Location block */}
-            <div className="p-4 border border-[#1E6BFF]/40 bg-[#1E6BFF]/5 space-y-3">
-              <div className="font-display text-xs tracking-wider text-[#1E6BFF] flex items-center gap-2">
+            <div className="p-4 border border-[#9AB8FF]/40 bg-[#9AB8FF]/5 space-y-3">
+              <div className="font-display text-xs tracking-wider text-[#9AB8FF] flex items-center gap-2">
                 <MapPin className="h-3 w-3" /> TA LOCALISATION
               </div>
               {useLocation && location.label ? (
                 <div className="text-sm">
                   <div className="text-white">{location.label}</div>
-                  <button type="button" onClick={() => { setUseLocation(false); setLocation({ lat: null, lon: null, label: "" }); }} className="text-xs text-[#1E6BFF] hover:underline mt-1">
+                  <button type="button" onClick={() => { setUseLocation(false); setLocation({ lat: null, lon: null, label: "" }); }} className="text-xs text-[#9AB8FF] hover:underline mt-1">
                     Modifier
                   </button>
                 </div>
@@ -146,7 +146,7 @@ export default function SpotRecommender() {
                     onClick={detectLocation}
                     disabled={geoLoading}
                     data-testid="detect-location"
-                    className="w-full flex items-center justify-center gap-2 bg-[#1E6BFF] hover:bg-[#1751C4] text-white py-2.5 font-display text-sm tracking-wider transition disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white py-2.5 font-display text-sm tracking-wider transition disabled:opacity-50"
                   >
                     <Navigation className="h-4 w-4" /> {geoLoading ? "DÉTECTION..." : "DÉTECTER MA POSITION"}
                   </button>
@@ -169,7 +169,7 @@ export default function SpotRecommender() {
                   step="10"
                   value={maxDistance}
                   onChange={(e) => setMaxDistance(parseInt(e.target.value))}
-                  className="w-full accent-[#1E6BFF]"
+                  className="w-full accent-[#9AB8FF]"
                 />
                 <div className="flex justify-between text-[10px] text-gray-500 mt-1 font-display tracking-wider">
                   <span>20 km</span><span>500</span><span>1500</span><span>3000 km</span>
@@ -186,13 +186,13 @@ export default function SpotRecommender() {
                 <div className="flex flex-wrap gap-2 mb-2" data-testid="quiver-chips">
                   {form.quiver.length === 0 && <span className="text-xs text-gray-500">Aucun kite renseigné</span>}
                   {form.quiver.map((k, i) => (
-                    <span key={`${k}-${i}`} className="inline-flex items-center gap-1 px-2 py-1 bg-[#1E6BFF]/15 border border-[#1E6BFF]/50 text-sm">
+                    <span key={`${k}-${i}`} className="inline-flex items-center gap-1 px-2 py-1 bg-[#9AB8FF]/15 border border-[#9AB8FF]/50 text-sm">
                       <span className="font-display">{k}m</span>
                       <button
                         type="button"
                         data-testid={`remove-kite-${i}`}
                         onClick={() => setForm({...form, quiver: form.quiver.filter((_, idx) => idx !== i)})}
-                        className="text-[#1E6BFF] hover:text-white text-base leading-none"
+                        className="text-[#9AB8FF] hover:text-white text-base leading-none"
                         aria-label="Retirer"
                       >×</button>
                     </span>
@@ -230,7 +230,7 @@ export default function SpotRecommender() {
                         setNewKite("");
                       }
                     }}
-                    className="px-4 border border-[#262626] hover:border-[#1E6BFF] text-sm font-display tracking-wider"
+                    className="px-4 border border-[#262626] hover:border-[#9AB8FF] text-sm font-display tracking-wider"
                   >AJOUTER</button>
                 </div>
               </Field>
@@ -250,7 +250,7 @@ export default function SpotRecommender() {
 
             {/* Date / time picker */}
             <div className="border-t border-[#262626] pt-4 space-y-4">
-              <div className="font-display text-xs tracking-wider text-[#1E6BFF]">QUAND ?</div>
+              <div className="font-display text-xs tracking-wider text-[#9AB8FF]">QUAND ?</div>
               <Field label="DATE (JUSQU&apos;À +14 JOURS)">
                 <input
                   data-testid="date-input"
@@ -271,7 +271,7 @@ export default function SpotRecommender() {
                   step="1"
                   value={form.target_hour}
                   onChange={(e) => setForm({...form, target_hour: parseInt(e.target.value)})}
-                  className="w-full accent-[#1E6BFF]"
+                  className="w-full accent-[#9AB8FF]"
                 />
                 <div className="flex justify-between text-[10px] text-gray-500 mt-1 font-display tracking-wider">
                   <span>6h</span><span>12h</span><span>16h</span><span>20h</span>
@@ -284,7 +284,7 @@ export default function SpotRecommender() {
               data-testid="spot-submit"
               type="submit"
               disabled={loading}
-              className="w-full bg-[#1E6BFF] hover:bg-[#1751C4] text-white py-4 font-display tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white py-4 font-display tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <Sparkles className="h-5 w-5" /> {loading ? "RECHERCHE..." : "TROUVER MON SPOT"}
             </button>
@@ -293,7 +293,7 @@ export default function SpotRecommender() {
           <div className="lg:col-span-2 space-y-4">
             {!result && !loading && (
               <div className="p-12 border border-dashed border-[#262626] bg-[#0A0A0A] text-center text-gray-500">
-                <MapPin className="h-12 w-12 mx-auto mb-3 text-[#1E6BFF]" />
+                <MapPin className="h-12 w-12 mx-auto mb-3 text-[#9AB8FF]" />
                 Renseigne ton profil pour découvrir les meilleurs spots adaptés{useLocation ? ` dans un rayon de ${maxDistance} km autour de ta position.` : "."}
               </div>
             )}
@@ -306,12 +306,12 @@ export default function SpotRecommender() {
             )}
             {result && result.top_spots.length > 0 && (
               <>
-                <div className="p-6 border-2 border-[#1E6BFF] bg-[#1E6BFF]/5">
-                  <div className="font-display text-xs tracking-widest text-[#1E6BFF] mb-2">CONSEIL IA</div>
+                <div className="p-6 border-2 border-[#9AB8FF] bg-[#9AB8FF]/5">
+                  <div className="font-display text-xs tracking-widest text-[#9AB8FF] mb-2">CONSEIL IA</div>
                   <p className="text-gray-100 leading-relaxed whitespace-pre-wrap">{result.ai_advice}</p>
                 </div>
                 {result.top_spots.map((s, i) => (
-                  <div key={s.name} data-testid={`spot-result-${i}`} className={`p-6 border ${i === 0 ? "border-[#1E6BFF]" : "border-[#262626]"} bg-[#0A0A0A] flex flex-col md:flex-row md:items-center gap-4 justify-between`}>
+                  <div key={s.name} data-testid={`spot-result-${i}`} className={`p-6 border ${i === 0 ? "border-[#9AB8FF]" : "border-[#262626]"} bg-[#0A0A0A] flex flex-col md:flex-row md:items-center gap-4 justify-between`}>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="font-display text-2xl">#{i + 1} {s.name}</span>
@@ -321,18 +321,18 @@ export default function SpotRecommender() {
                           <span className="text-xs px-2 py-0.5 border border-red-500 text-red-400 font-display tracking-wider">⚠ NIVEAU</span>
                         )}
                         {"distance_km" in s && (
-                          <span className="text-xs px-2 py-0.5 border border-[#1E6BFF] text-[#1E6BFF] font-display tracking-wider">{s.distance_km} KM</span>
+                          <span className="text-xs px-2 py-0.5 border border-[#9AB8FF] text-[#9AB8FF] font-display tracking-wider">{s.distance_km} KM</span>
                         )}
                       </div>
                       <div className="text-sm text-gray-400 mb-2">Type: {s.type} · Niveau spot: {s.level} · Vent idéal: {s.ideal_kts[0]}–{s.ideal_kts[1]} kts</div>
                   <div className="flex items-center gap-4 text-sm flex-wrap">
-                    <div className="flex items-center gap-1"><Wind className="h-4 w-4 text-[#1E6BFF]" /> <span className="font-display text-lg">{s.wind_kts_now?.toFixed(1)}</span> kts</div>
+                    <div className="flex items-center gap-1"><Wind className="h-4 w-4 text-[#9AB8FF]" /> <span className="font-display text-lg">{s.wind_kts_now?.toFixed(1)}</span> kts</div>
                     {s.recommended_kite && (
                       <div className="text-gray-300 text-sm flex items-center gap-1">
-                        Kite conseillé : <span className="font-display text-lg text-[#1E6BFF]">{s.recommended_kite}m</span>
+                        Kite conseillé : <span className="font-display text-lg text-[#9AB8FF]">{s.recommended_kite}m</span>
                       </div>
                     )}
-                    <div className="text-gray-400">Score: <span className="text-[#1E6BFF] font-display text-lg">{s.score}</span></div>
+                    <div className="text-gray-400">Score: <span className="text-[#9AB8FF] font-display text-lg">{s.score}</span></div>
                   </div>
                     </div>
                   </div>
@@ -345,7 +345,7 @@ export default function SpotRecommender() {
 
       <style>{`
         .sr-input { width: 100%; background: #000; border: 1px solid #262626; padding: 10px 14px; outline: none; color: white; }
-        .sr-input:focus { border-color: #1E6BFF; }
+        .sr-input:focus { border-color: #9AB8FF; }
       `}</style>
     </div>
   );
@@ -361,14 +361,14 @@ function CitySearchInput({ onSearch, loading }) {
         onChange={(e) => setQ(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onSearch(q); } }}
         placeholder="ex: Hyères, Lille..."
-        className="flex-1 bg-black border border-[#262626] px-3 py-2 text-sm outline-none focus:border-[#1E6BFF]"
+        className="flex-1 bg-black border border-[#262626] px-3 py-2 text-sm outline-none focus:border-[#9AB8FF]"
       />
       <button
         type="button"
         data-testid="city-search-btn"
         onClick={() => onSearch(q)}
         disabled={loading || !q.trim()}
-        className="px-3 border border-[#262626] hover:border-[#1E6BFF] text-sm font-display tracking-wider disabled:opacity-50"
+        className="px-3 border border-[#262626] hover:border-[#9AB8FF] text-sm font-display tracking-wider disabled:opacity-50"
       >
         OK
       </button>

@@ -90,21 +90,21 @@ export default function Landing() {
               className={`group flex items-center gap-3 transition-all ${slide === i ? "opacity-100" : "opacity-40 hover:opacity-70"}`}
             >
               {!img.available && (
-                <span className="text-[9px] tracking-widest text-[#1E6BFF] font-display border border-[#1E6BFF]/60 px-1.5 py-0.5">À VENIR</span>
+                <span className="text-[9px] tracking-widest text-[#9AB8FF] font-display border border-[#9AB8FF]/60 px-1.5 py-0.5">À VENIR</span>
               )}
               <span className="font-display text-xs tracking-[0.3em] text-white">{img.label}</span>
-              <span className={`block h-0.5 transition-all ${slide === i ? "w-12 bg-[#1E6BFF]" : "w-6 bg-white/40"}`} />
+              <span className={`block h-0.5 transition-all ${slide === i ? "w-12 bg-[#9AB8FF]" : "w-6 bg-white/40"}`} />
             </button>
           ))}
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 py-32 w-full">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#1E6BFF] text-[#1E6BFF] text-xs font-display tracking-wider mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#9AB8FF] text-[#9AB8FF] text-xs font-display tracking-wider mb-6">
               <Activity className="h-3 w-3" /> COACHING PREMIUM · KITE <span className="text-gray-500 normal-case tracking-normal">+ wake / foil / surf bientôt</span>
             </div>
             <h1 className="font-display text-5xl md:text-7xl lg:text-8xl leading-[0.95] mb-6">
-              PROGRESS<br /><span className="text-[#1E6BFF]">YOUR RIDE.</span>
+              PROGRESS<br /><span className="text-[#9AB8FF]">YOUR RIDE.</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-300 max-w-xl mb-10 leading-relaxed">
               Analyse vidéo IA, bibliothèque de cours pour tous niveaux et un recommandeur de spots qui calcule le meilleur endroit pour ton matériel et les conditions du jour.
@@ -113,7 +113,7 @@ export default function Landing() {
               <button
                 data-testid="hero-cta-start"
                 onClick={handleStart}
-                className="group bg-[#1E6BFF] hover:bg-[#1751C4] text-white px-8 py-4 font-display tracking-wider flex items-center gap-3 transition-all hover:translate-x-1"
+                className="group bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-8 py-4 font-display tracking-wider flex items-center gap-3 transition-all hover:translate-x-1"
               >
                 COMMENCER MAINTENANT
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition" />
@@ -129,7 +129,7 @@ export default function Landing() {
             <div className="mt-12 flex items-center gap-8 text-xs font-display tracking-wider text-gray-400">
               <div><span className="text-white text-2xl block">9.99€</span>STANDARD/MOIS</div>
               <div className="h-8 w-px bg-[#262626]" />
-              <div><span className="text-[#1E6BFF] text-2xl block">15.99€</span>PREMIUM/MOIS</div>
+              <div><span className="text-[#9AB8FF] text-2xl block">15.99€</span>PREMIUM/MOIS</div>
               <div className="h-8 w-px bg-[#262626] hidden sm:block" />
               <div className="hidden sm:block"><span className="text-white text-2xl block">∞</span>SESSIONS</div>
             </div>
@@ -141,17 +141,17 @@ export default function Landing() {
       <section data-testid="features" className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-16">
-            <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-3">CE QUE TU OBTIENS</div>
-            <h2 className="font-display text-4xl md:text-6xl leading-none">UNE PLATEFORME,<br/><span className="text-[#1E6BFF]">TOUTE LA GLISSE.</span></h2>
+            <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-3">CE QUE TU OBTIENS</div>
+            <h2 className="font-display text-4xl md:text-6xl leading-none">UNE PLATEFORME,<br/><span className="text-[#9AB8FF]">TOUTE LA GLISSE.</span></h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {/* Big card: Video analysis */}
-            <div className="md:col-span-7 group relative overflow-hidden border border-[#262626] hover:border-[#1E6BFF]/60 transition" data-testid="feature-video">
+            <div className="md:col-span-7 group relative overflow-hidden border border-[#262626] hover:border-[#9AB8FF]/60 transition" data-testid="feature-video">
               <img src={VIDEO_IMG} alt="" className="w-full h-80 object-cover opacity-60 group-hover:opacity-80 transition" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1E6BFF] text-white text-xs font-display tracking-wider mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#9AB8FF] text-white text-xs font-display tracking-wider mb-4">
                   <Video className="h-3 w-3" /> ANALYSE IA
                 </div>
                 <h3 className="font-display text-3xl md:text-4xl mb-2">DÉCRYPTE TES SESSIONS</h3>
@@ -160,7 +160,7 @@ export default function Landing() {
             </div>
 
             {/* Courses */}
-            <div className="md:col-span-5 group relative overflow-hidden border border-[#262626] hover:border-[#1E6BFF]/60 transition" data-testid="feature-courses">
+            <div className="md:col-span-5 group relative overflow-hidden border border-[#262626] hover:border-[#9AB8FF]/60 transition" data-testid="feature-courses">
               <img src={COURSE_IMG} alt="" className="w-full h-80 object-cover opacity-60 group-hover:opacity-80 transition" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8">
@@ -173,11 +173,11 @@ export default function Landing() {
             </div>
 
             {/* AI Feedback / Points d'amélioration */}
-            <div className="md:col-span-5 group relative overflow-hidden border border-[#262626] hover:border-[#1E6BFF]/60 transition" data-testid="feature-feedback">
+            <div className="md:col-span-5 group relative overflow-hidden border border-[#262626] hover:border-[#9AB8FF]/60 transition" data-testid="feature-feedback">
               <img src={FEEDBACK_IMG} alt="" className="w-full h-80 object-cover opacity-50 group-hover:opacity-75 transition" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1E6BFF] text-white text-xs font-display tracking-wider mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#9AB8FF] text-white text-xs font-display tracking-wider mb-4">
                   <Target className="h-3 w-3" /> POINTS D'AMÉLIORATION
                 </div>
                 <h3 className="font-display text-3xl mb-2">UN TRUC QUI<br/>NE PASSE PAS ?</h3>
@@ -186,17 +186,17 @@ export default function Landing() {
             </div>
 
             {/* Spot finder big */}
-            <div className="md:col-span-7 group relative overflow-hidden border border-[#262626] hover:border-[#1E6BFF]/60 transition" data-testid="feature-spots">
+            <div className="md:col-span-7 group relative overflow-hidden border border-[#262626] hover:border-[#9AB8FF]/60 transition" data-testid="feature-spots">
               <img src={SPOT_IMG} alt="" className="w-full h-80 object-cover opacity-50 group-hover:opacity-70 transition" />
               <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
               <div className="absolute inset-0 flex items-center">
                 <div className="p-8 max-w-md">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#1E6BFF] text-[#1E6BFF] text-xs font-display tracking-wider mb-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#9AB8FF] text-[#9AB8FF] text-xs font-display tracking-wider mb-4">
                     <MapPin className="h-3 w-3" /> PREMIUM · SPOT FINDER
                   </div>
                   <h3 className="font-display text-3xl md:text-4xl mb-3">LE BON SPOT,<br/>LE BON JOUR.</h3>
                   <p className="text-gray-300 mb-4">L'IA croise ton poids, ton matériel et le vent réel pour te proposer le spot le plus safe pour ton niveau.</p>
-                  <Link to="/pricing" className="inline-flex items-center gap-2 text-[#1E6BFF] font-display tracking-wider hover:gap-4 transition-all">
+                  <Link to="/pricing" className="inline-flex items-center gap-2 text-[#9AB8FF] font-display tracking-wider hover:gap-4 transition-all">
                     DÉBLOQUER LE PREMIUM <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -209,15 +209,15 @@ export default function Landing() {
       {/* CTA */}
       <section className="py-24 px-6 border-t border-[#262626]">
         <div className="max-w-5xl mx-auto text-center">
-          <Wind className="h-12 w-12 text-[#1E6BFF] mx-auto mb-6" />
+          <Wind className="h-12 w-12 text-[#9AB8FF] mx-auto mb-6" />
           <h2 className="font-display text-4xl md:text-6xl mb-6">
-            T'ES PRÊT À <span className="text-[#1E6BFF]">PROGRESSER</span> ?
+            T'ES PRÊT À <span className="text-[#9AB8FF]">PROGRESSER</span> ?
           </h2>
           <p className="text-gray-400 mb-10 text-lg">Rejoins RIDE’UP. Coaching personnel. Résultats mesurables.</p>
           <button
             data-testid="bottom-cta"
             onClick={handleStart}
-            className="bg-[#1E6BFF] hover:bg-[#1751C4] text-white px-10 py-5 font-display text-lg tracking-wider transition"
+            className="bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-10 py-5 font-display text-lg tracking-wider transition"
           >
             JE COMMENCE
           </button>

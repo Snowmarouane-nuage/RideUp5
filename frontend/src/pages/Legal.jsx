@@ -4,13 +4,13 @@ export function LegalLayout({ title, lastUpdate = "Février 2026", children }) {
   return (
     <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
       <div className="max-w-3xl mx-auto">
-        <Link to="/" className="text-xs font-display tracking-[0.3em] text-[#1E6BFF] hover:underline">← RETOUR ACCUEIL</Link>
+        <Link to="/" className="text-xs font-display tracking-[0.3em] text-[#9AB8FF] hover:underline">← RETOUR ACCUEIL</Link>
         <h1 className="font-display text-4xl md:text-5xl mt-4 mb-2">{title}</h1>
         <div className="text-xs text-gray-500 mb-10">Dernière mise à jour : {lastUpdate}</div>
         <div className="prose prose-invert prose-sm max-w-none space-y-4 text-gray-300 leading-relaxed">
           {children}
         </div>
-        <div className="mt-12 p-4 border border-[#1E6BFF]/40 bg-[#1E6BFF]/5 text-sm text-gray-400">
+        <div className="mt-12 p-4 border border-[#9AB8FF]/40 bg-[#9AB8FF]/5 text-sm text-gray-400">
           ⚠️ <strong>Document modèle</strong> — ce texte est un modèle de base. L'éditeur du site doit le compléter avec ses informations légales (raison sociale, SIRET, RCS, adresse, hébergeur, DPO, etc.) avant ouverture au public.
         </div>
       </div>

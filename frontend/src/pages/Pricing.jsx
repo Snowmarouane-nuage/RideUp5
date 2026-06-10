@@ -67,8 +67,8 @@ export default function Pricing() {
     <div className="min-h-screen bg-black text-white pt-32 pb-24 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-3">ABONNEMENTS</div>
-          <h1 className="font-display text-5xl md:text-7xl leading-none mb-4">CHOISIS TON <span className="text-[#1E6BFF]">PLAN</span></h1>
+          <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-3">ABONNEMENTS</div>
+          <h1 className="font-display text-5xl md:text-7xl leading-none mb-4">CHOISIS TON <span className="text-[#9AB8FF]">PLAN</span></h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">Sans engagement. Annule à tout moment. Tous les plans incluent l'analyse vidéo IA.</p>
         </div>
 
@@ -79,12 +79,12 @@ export default function Pricing() {
               data-testid={`pricing-card-${p.id}`}
               className={`relative p-8 md:p-10 border-2 transition-all hover:-translate-y-1 ${
                 p.highlight
-                  ? "border-[#1E6BFF] bg-[#0A0A0A] ring-4 ring-[#1E6BFF]/20"
-                  : "border-[#262626] bg-[#0A0A0A] hover:border-[#1E6BFF]/50"
+                  ? "border-[#9AB8FF] bg-[#0A0A0A] ring-4 ring-[#9AB8FF]/20"
+                  : "border-[#262626] bg-[#0A0A0A] hover:border-[#9AB8FF]/50"
               }`}
             >
               {p.highlight && (
-                <div className="absolute -top-3 left-8 bg-[#1E6BFF] text-white text-xs font-display tracking-widest px-3 py-1">
+                <div className="absolute -top-3 left-8 bg-[#9AB8FF] text-white text-xs font-display tracking-widest px-3 py-1">
                   RECOMMANDÉ
                 </div>
               )}
@@ -97,7 +97,7 @@ export default function Pricing() {
               <ul className="space-y-3 mb-10 min-h-[260px]">
                 {p.features.map((f, i) => (
                   <li key={i} className="flex items-start gap-3 text-sm">
-                    <Check className={`h-5 w-5 shrink-0 mt-0.5 ${p.highlight ? "text-[#1E6BFF]" : "text-white"}`} />
+                    <Check className={`h-5 w-5 shrink-0 mt-0.5 ${p.highlight ? "text-[#9AB8FF]" : "text-white"}`} />
                     <span className="text-gray-200">{f}</span>
                   </li>
                 ))}
@@ -108,7 +108,7 @@ export default function Pricing() {
                 disabled={loading === p.id}
                 className={`w-full py-4 font-display tracking-wider transition ${
                   p.highlight
-                    ? "bg-[#1E6BFF] hover:bg-[#1751C4] text-white"
+                    ? "bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white"
                     : "border-2 border-white text-white hover:bg-white hover:text-black"
                 } disabled:opacity-50`}
               >

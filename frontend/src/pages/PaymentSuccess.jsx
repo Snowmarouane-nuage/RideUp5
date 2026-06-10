@@ -41,19 +41,19 @@ export default function PaymentSuccess() {
       <div className="text-center max-w-md p-12 border border-[#262626] bg-[#0A0A0A]" data-testid="payment-success">
         {status === "polling" && (
           <>
-            <div className="h-16 w-16 mx-auto mb-6 rounded-full border-4 border-[#1E6BFF] border-t-transparent animate-spin" />
+            <div className="h-16 w-16 mx-auto mb-6 rounded-full border-4 border-[#9AB8FF] border-t-transparent animate-spin" />
             <h1 className="font-display text-3xl mb-2">VALIDATION DU PAIEMENT</h1>
             <p className="text-gray-400">Quelques secondes...</p>
           </>
         )}
         {status === "paid" && (
           <>
-            <div className="h-16 w-16 mx-auto mb-6 rounded-full bg-[#1E6BFF] flex items-center justify-center">
+            <div className="h-16 w-16 mx-auto mb-6 rounded-full bg-[#9AB8FF] flex items-center justify-center">
               <Check className="h-10 w-10 text-white" />
             </div>
             <h1 className="font-display text-3xl mb-2">PAIEMENT CONFIRMÉ</h1>
             <p className="text-gray-400 mb-6">Ton abonnement RIDE’UP est actif. Bienvenue dans la team.</p>
-            <button data-testid="goto-dashboard" onClick={() => navigate("/dashboard")} className="bg-[#1E6BFF] hover:bg-[#1751C4] text-white px-8 py-4 font-display tracking-wider">
+            <button data-testid="goto-dashboard" onClick={() => navigate("/dashboard")} className="bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-8 py-4 font-display tracking-wider">
               ACCÉDER AU DASHBOARD
             </button>
           </>

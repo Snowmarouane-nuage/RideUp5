@@ -41,12 +41,12 @@ export default function WeekendSpots() {
         style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95)), url(${HERO_BG})`, backgroundSize: "cover", backgroundPosition: "center" }}
       >
         <div className="max-w-6xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#1E6BFF] text-[#1E6BFF] text-xs font-display tracking-wider mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#9AB8FF] text-[#9AB8FF] text-xs font-display tracking-wider mb-6">
             <Calendar className="h-3 w-3" /> MIS À JOUR · {new Date().toLocaleDateString("fr-FR")}
           </div>
           <h1 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] mb-4">
             MEILLEURS SPOTS DE KITESURF<br/>
-            <span className="text-[#1E6BFF]">CE WEEK-END</span>
+            <span className="text-[#9AB8FF]">CE WEEK-END</span>
           </h1>
           <p className="text-lg text-gray-300 max-w-3xl">
             On a scanné le vent prévu pour <strong className="capitalize">{data ? formatDate(data.saturday) : "..."}</strong> et <strong className="capitalize">{data ? formatDate(data.sunday) : "..."}</strong> sur les meilleurs spots de France et d'Europe. Voici notre classement live.
@@ -60,7 +60,7 @@ export default function WeekendSpots() {
 
           {loading && (
             <div className="text-center py-20">
-              <div className="h-12 w-12 mx-auto rounded-full border-4 border-[#1E6BFF] border-t-transparent animate-spin mb-4" />
+              <div className="h-12 w-12 mx-auto rounded-full border-4 border-[#9AB8FF] border-t-transparent animate-spin mb-4" />
               <div className="text-gray-400 font-display tracking-wider">CHARGEMENT DES PRÉVISIONS...</div>
             </div>
           )}
@@ -82,7 +82,7 @@ export default function WeekendSpots() {
 
               {/* Full ranking */}
               <div className="font-display text-2xl mb-4 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-[#1E6BFF]" /> CLASSEMENT COMPLET
+                <TrendingUp className="h-5 w-5 text-[#9AB8FF]" /> CLASSEMENT COMPLET
               </div>
               <div className="space-y-3">
                 {data.spots.slice(3).map((s, i) => (
@@ -91,16 +91,16 @@ export default function WeekendSpots() {
               </div>
 
               {/* CTA */}
-              <div className="mt-16 p-10 border-2 border-[#1E6BFF] bg-gradient-to-br from-[#1E6BFF]/20 to-transparent text-center">
-                <Sparkles className="h-12 w-12 text-[#1E6BFF] mx-auto mb-4" />
-                <h2 className="font-display text-3xl md:text-5xl mb-4">VEUX-TU TON SPOT <span className="text-[#1E6BFF]">SUR-MESURE</span> ?</h2>
+              <div className="mt-16 p-10 border-2 border-[#9AB8FF] bg-gradient-to-br from-[#9AB8FF]/20 to-transparent text-center">
+                <Sparkles className="h-12 w-12 text-[#9AB8FF] mx-auto mb-4" />
+                <h2 className="font-display text-3xl md:text-5xl mb-4">VEUX-TU TON SPOT <span className="text-[#9AB8FF]">SUR-MESURE</span> ?</h2>
                 <p className="text-gray-300 max-w-2xl mx-auto mb-8">
                   Avec RIDE’UP Premium, l'IA croise <strong>ta localisation</strong>, ton <strong>poids</strong>, ton <strong>matériel</strong> et ton <strong>niveau</strong> pour te recommander le spot le plus safe et adapté chaque jour de l'année.
                 </p>
                 <Link
                   to="/pricing"
                   data-testid="weekend-cta-premium"
-                  className="inline-flex items-center gap-3 bg-[#1E6BFF] hover:bg-[#1751C4] text-white px-8 py-4 font-display tracking-wider transition"
+                  className="inline-flex items-center gap-3 bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-8 py-4 font-display tracking-wider transition"
                 >
                   ESSAYER LE SPOT FINDER PREMIUM · 15.99€/MOIS <ArrowRight className="h-5 w-5" />
                 </Link>
@@ -132,14 +132,14 @@ function PodiumCard({ spot, rank }) {
   return (
     <div
       data-testid={`podium-${rank}`}
-      className={`relative p-6 border-2 ${isTop ? "border-[#1E6BFF] bg-gradient-to-br from-[#1E6BFF]/20 to-transparent md:scale-105" : "border-[#262626] bg-[#0A0A0A]"}`}
+      className={`relative p-6 border-2 ${isTop ? "border-[#9AB8FF] bg-gradient-to-br from-[#9AB8FF]/20 to-transparent md:scale-105" : "border-[#262626] bg-[#0A0A0A]"}`}
     >
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="text-3xl mb-1">{medal}</div>
           <div className="font-display text-2xl">{spot.name}</div>
         </div>
-        {isTop && <Flame className="h-6 w-6 text-[#1E6BFF]" />}
+        {isTop && <Flame className="h-6 w-6 text-[#9AB8FF]" />}
       </div>
       <div className="text-xs text-gray-400 mb-4">
         Type: {spot.type} · Niveau: {spot.level}
@@ -147,15 +147,15 @@ function PodiumCard({ spot, rank }) {
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
           <div className="text-[10px] font-display tracking-widest text-gray-500">SAMEDI</div>
-          <div className="font-display text-2xl flex items-center gap-1"><Wind className="h-4 w-4 text-[#1E6BFF]" />{spot.sat_avg_kts ?? "—"}<span className="text-xs text-gray-400">kts</span></div>
+          <div className="font-display text-2xl flex items-center gap-1"><Wind className="h-4 w-4 text-[#9AB8FF]" />{spot.sat_avg_kts ?? "—"}<span className="text-xs text-gray-400">kts</span></div>
         </div>
         <div>
           <div className="text-[10px] font-display tracking-widest text-gray-500">DIMANCHE</div>
-          <div className="font-display text-2xl flex items-center gap-1"><Wind className="h-4 w-4 text-[#1E6BFF]" />{spot.sun_avg_kts ?? "—"}<span className="text-xs text-gray-400">kts</span></div>
+          <div className="font-display text-2xl flex items-center gap-1"><Wind className="h-4 w-4 text-[#9AB8FF]" />{spot.sun_avg_kts ?? "—"}<span className="text-xs text-gray-400">kts</span></div>
         </div>
       </div>
       <div className="pt-3 border-t border-[#262626] flex items-center justify-between text-xs">
-        <span className="text-gray-400"><strong className="text-[#1E6BFF]">{spot.rideable_hours}h</strong> rideables</span>
+        <span className="text-gray-400"><strong className="text-[#9AB8FF]">{spot.rideable_hours}h</strong> rideables</span>
         <span className="text-gray-400">Vent idéal: {spot.ideal_kts[0]}–{spot.ideal_kts[1]} kts</span>
       </div>
     </div>
@@ -166,7 +166,7 @@ function RankRow({ spot, rank }) {
   return (
     <div
       data-testid={`rank-${rank}`}
-      className="p-4 border border-[#262626] bg-[#0A0A0A] flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-[#1E6BFF]/50 transition"
+      className="p-4 border border-[#262626] bg-[#0A0A0A] flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-[#9AB8FF]/50 transition"
     >
       <div className="flex items-center gap-4">
         <span className="font-display text-2xl text-gray-500 w-10">#{rank}</span>
@@ -186,7 +186,7 @@ function RankRow({ spot, rank }) {
           <span className="font-display text-lg text-white">{spot.sun_avg_kts ?? "—"}</span>
           <span className="text-xs"> kts</span>
         </div>
-        <div className="text-[#1E6BFF] font-display text-lg">{spot.rideable_hours}h</div>
+        <div className="text-[#9AB8FF] font-display text-lg">{spot.rideable_hours}h</div>
       </div>
     </div>
   );

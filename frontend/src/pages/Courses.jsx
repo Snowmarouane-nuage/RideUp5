@@ -19,8 +19,8 @@ export default function Courses() {
   return (
     <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="text-[#1E6BFF] font-display text-xs tracking-[0.3em] mb-2">BIBLIOTHÈQUE</div>
-        <h1 className="font-display text-4xl md:text-6xl mb-6">COURS <span className="text-[#1E6BFF]">RIDE’UP</span></h1>
+        <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-2">BIBLIOTHÈQUE</div>
+        <h1 className="font-display text-4xl md:text-6xl mb-6">COURS <span className="text-[#9AB8FF]">RIDE’UP</span></h1>
         <p className="text-gray-400 max-w-2xl mb-10">Modules vidéo structurés pour progresser, du débutant à l'avancé. Kitesurf disponible aujourd'hui · Wakeboard et Foil bientôt.</p>
 
         <div className="flex flex-wrap gap-2 mb-10">
@@ -36,22 +36,22 @@ export default function Courses() {
               onClick={() => !s.soon && setFilter(s.id)}
               disabled={s.soon}
               className={`px-4 py-2 font-display tracking-wider text-sm transition flex items-center gap-2 ${
-                filter === s.id ? "bg-[#1E6BFF] text-white" : "border border-[#262626] text-gray-300 hover:border-[#1E6BFF]"
+                filter === s.id ? "bg-[#9AB8FF] text-white" : "border border-[#262626] text-gray-300 hover:border-[#9AB8FF]"
               } ${s.soon ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {s.label}
-              {s.soon && <span className="text-[9px] tracking-widest text-[#1E6BFF] border border-[#1E6BFF]/60 px-1.5">À VENIR</span>}
+              {s.soon && <span className="text-[9px] tracking-widest text-[#9AB8FF] border border-[#9AB8FF]/60 px-1.5">À VENIR</span>}
             </button>
           ))}
         </div>
 
         {locked && (
-          <div className="mb-10 p-6 border border-[#1E6BFF]/50 bg-[#1E6BFF]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="mb-10 p-6 border border-[#9AB8FF]/50 bg-[#9AB8FF]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="font-display text-xl">ACCÈS RESTREINT</div>
               <div className="text-sm text-gray-400">Souscris un abonnement pour débloquer tous les cours.</div>
             </div>
-            <Link data-testid="courses-upgrade" to="/pricing" className="bg-[#1E6BFF] hover:bg-[#1751C4] text-white px-5 py-3 font-display tracking-wider">
+            <Link data-testid="courses-upgrade" to="/pricing" className="bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-5 py-3 font-display tracking-wider">
               VOIR LES PLANS
             </Link>
           </div>
@@ -59,19 +59,19 @@ export default function Courses() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((c) => (
-            <div key={c.id} data-testid={`course-${c.id}`} className={`group relative border border-[#262626] bg-[#0A0A0A] hover:border-[#1E6BFF]/60 transition-all ${c.coming_soon ? "opacity-70" : ""}`}>
+            <div key={c.id} data-testid={`course-${c.id}`} className={`group relative border border-[#262626] bg-[#0A0A0A] hover:border-[#9AB8FF]/60 transition-all ${c.coming_soon ? "opacity-70" : ""}`}>
               <div className="relative overflow-hidden">
                 <img src={c.thumbnail} alt={c.title} className="w-full h-56 object-cover group-hover:scale-105 transition duration-500" />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                   {c.coming_soon ? (
                     <div className="text-center">
                       <Lock className="h-10 w-10 text-white mx-auto mb-1" />
-                      <div className="text-[10px] font-display tracking-[0.25em] text-[#1E6BFF] border border-[#1E6BFF] px-2 py-0.5 bg-black/70">À VENIR</div>
+                      <div className="text-[10px] font-display tracking-[0.25em] text-[#9AB8FF] border border-[#9AB8FF] px-2 py-0.5 bg-black/70">À VENIR</div>
                     </div>
                   ) : locked ? (
                     <Lock className="h-12 w-12 text-white" />
                   ) : (
-                    <div className="h-16 w-16 rounded-full bg-[#1E6BFF] flex items-center justify-center group-hover:scale-110 transition">
+                    <div className="h-16 w-16 rounded-full bg-[#9AB8FF] flex items-center justify-center group-hover:scale-110 transition">
                       <Play className="h-7 w-7 text-white fill-white ml-1" />
                     </div>
                   )}
@@ -82,7 +82,7 @@ export default function Courses() {
               </div>
               <div className="p-5">
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-                  <span className="text-[#1E6BFF] font-display tracking-wider">{c.level.toUpperCase()}</span>
+                  <span className="text-[#9AB8FF] font-display tracking-wider">{c.level.toUpperCase()}</span>
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {c.duration}</span>
                 </div>
                 <h3 className="font-display text-xl mb-2 leading-tight">{c.title}</h3>

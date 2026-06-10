@@ -21,7 +21,7 @@ body {
 }
 
 ::selection {
-    background: #1E6BFF;
+    background: #9AB8FF;
     color: #ffffff;
 }
 
@@ -33,19 +33,19 @@ body {
         --card-foreground: 0 0% 100%;
         --popover: 0 0% 4%;
         --popover-foreground: 0 0% 100%;
-        --primary: 217 100% 56%;
+        --primary: 222 100% 80%;
         --primary-foreground: 0 0% 100%;
         --secondary: 0 0% 8%;
         --secondary-foreground: 0 0% 100%;
         --muted: 0 0% 8%;
         --muted-foreground: 0 0% 64%;
-        --accent: 217 100% 56%;
+        --accent: 222 100% 80%;
         --accent-foreground: 0 0% 100%;
         --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 100%;
         --border: 0 0% 15%;
         --input: 0 0% 10%;
-        --ring: 217 100% 56%;
+        --ring: 222 100% 80%;
         --radius: 0rem;
     }
 }
@@ -71,7 +71,7 @@ body {
     background: #262626;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #1E6BFF;
+    background: #9AB8FF;
 }
 
 .diagonal-stripe {
