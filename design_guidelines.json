@@ -4,9 +4,9 @@
   "archetype": "Performance Pro (Archetype 2)",
   "emotional_tone": "Cinematic, elite athleticism, high-energy, premium coaching.",
   "brand": {
-    "name": "RIDEMIND",
+    "name": "RIDE'UP",
     "tagline": "PROGRESS YOUR RIDE",
-    "logo_url": "https://customer-assets.emergentagent.com/job_wave-coach-3/artifacts/pde885i4_ChatGPT%20Image%2023%20mai%202026%20a%CC%80%2014_58_13.png"
+    "logo_url": "/logo.png"
   },
   "colors": {
     "background": "#000000",
@@ -121,7 +121,7 @@
     "Install 'lucide-react' for icons if not present.",
     "Use raw HTML/Tailwind for marketing layouts. Use heavily customized Shadcn components for Dashboard and interactive elements.",
     "Avoid border-radius (use rounded-none or rounded-sm max) to maintain the brutalist/pro-sport aesthetic.",
-    "Integrate Google OAuth via Emergent Auth for login.",
+    "Integrate email/password auth on /login (compte RIDE'UP natif).",
     "Build the Spot Recommender as a premium-gated feature. Show a lock icon or redirect to upgrade for Standard users.",
     "Ensure the hero image uses a gradient mask so the pure white text is perfectly legible.",
     "Use the specific brand logo provided.",

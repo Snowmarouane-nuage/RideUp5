@@ -2,14 +2,38 @@ import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
-import { Upload, Sparkles, Lock, Target, Dumbbell, ShieldCheck, Award, ListChecks } from "lucide-react";
+import { Upload, Sparkles, Target, Dumbbell, ShieldCheck, Award, ListChecks, Wind } from "lucide-react";
+import { FeatureGate } from "@/components/FeatureGate";
+
+const MAX_VIDEO_MB = 100;
+const MAX_VIDEO_SECONDS = 20;
+
+function readVideoDuration(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("invalid"));
+    };
+    video.src = url;
+  });
+}
 
 export default function VideoAnalysis() {
   const { user } = useAuth();
   const [sport, setSport] = useState("kitesurf");
   const [level, setLevel] = useState("Intermédiaire");
-  const [description, setDescription] = useState("");
+  const [trick, setTrick] = useState("");
+  const [problem, setProblem] = useState("");
+  const [conditions, setConditions] = useState("");
   const [file, setFile] = useState(null);
+  const [videoDuration, setVideoDuration] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
@@ -26,8 +50,12 @@ export default function VideoAnalysis() {
   const submit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!description.trim()) {
-      setError("Décris ta question ou la figure que tu veux analyser.");
+    if (!file) {
+      setError("Ajoute une vidéo de ta session — le coach RIDE'UP analyse les images extraites de ton clip.");
+      return;
+    }
+    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      setError(`Vidéo trop lourde (max ${MAX_VIDEO_MB} MB).`);
       return;
     }
     setLoading(true);
@@ -36,7 +64,9 @@ export default function VideoAnalysis() {
       const fd = new FormData();
       fd.append("sport", sport);
       fd.append("level", level);
-      fd.append("description", description);
+      fd.append("trick", trick.trim());
+      fd.append("problem", problem.trim());
+      fd.append("conditions", conditions.trim());
       if (file) fd.append("video", file);
       const r = await api.post("/video-analysis", fd, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -51,14 +81,16 @@ export default function VideoAnalysis() {
     }
   };
 
-  if (locked) return <LockedView title="ANALYSE VIDÉO IA" />;
-
   return (
+    <FeatureGate title="ANALYSE VIDÉO IA">
     <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-2">COACHING IA</div>
-        <h1 className="font-display text-4xl md:text-6xl mb-3">ANALYSE <span className="text-[#9AB8FF]">VIDÉO</span></h1>
-        <p className="text-gray-400 mb-10 max-w-2xl">Upload ta vidéo (optionnel) et décris la figure ou la session. L&apos;agent RIDE’UP te livre un retour technique structuré.</p>
+        <h1 className="font-display text-4xl md:text-6xl mb-3">ANALYSE <span className="text-[#9AB8FF]">VIDÉO KITESURF</span></h1>
+        <p className="text-gray-400 mb-10 max-w-2xl">
+          Analyse expert sur <span className="text-white">96+ images</span> par clip, concentrées autour du décollage et de la réception.
+          Modèle vision <span className="text-white">GPT-4.1</span> (fallback GPT-4o). Aucune supposition.
+        </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Form */}
@@ -66,9 +98,9 @@ export default function VideoAnalysis() {
             <Field label="SPORT">
               <select data-testid="sport-select" value={sport} onChange={(e) => setSport(e.target.value)} className="va-input">
                 <option value="kitesurf">Kitesurf</option>
-                <option value="wakeboard" disabled>Wakeboard (à venir)</option>
-                <option value="foil" disabled>Foil (à venir)</option>
-                <option value="surf" disabled>Surf (à venir)</option>
+                <option value="wakeboard">Wakeboard</option>
+                <option value="foil">Foil</option>
+                <option value="surf">Surf</option>
               </select>
             </Field>
             <Field label="NIVEAU">
@@ -79,22 +111,87 @@ export default function VideoAnalysis() {
                 <option>Pro</option>
               </select>
             </Field>
-            <Field label="DÉCRIS TA SESSION / TON PROBLÈME">
+            <Field label="FIGURE TENTÉE (OPTIONNEL)">
+              <input
+                data-testid="trick-input"
+                type="text"
+                value={trick}
+                onChange={(e) => setTrick(e.target.value)}
+                placeholder="Laisse vide — l'IA détecte le trick. Ex: Backroll, raley…"
+                className="va-input"
+              />
+            </Field>
+            <Field label="TON PROBLÈME / QUESTION (OPTIONNEL)">
               <textarea
-                data-testid="description-input"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={6}
-                placeholder="Ex: Je tente mon premier backroll mais je tombe sur le dos systématiquement. Vent 22 kts, kite 9m..."
+                data-testid="problem-input"
+                value={problem}
+                onChange={(e) => setProblem(e.target.value)}
+                rows={4}
+                placeholder="Laisse vide — l'IA identifie le problème. Ou décris ce qui bloque…"
                 className="va-input resize-none"
               />
             </Field>
-            <Field label="VIDÉO (OPTIONNEL · MAX 100MB)">
+            <Field label="CONTEXTE (OPTIONNEL)">
+              <input
+                data-testid="conditions-input"
+                type="text"
+                value={conditions}
+                onChange={(e) => setConditions(e.target.value)}
+                placeholder="Vent 22 kts, kite 9m, twintip 138, spot Leucate…"
+                className="va-input"
+              />
+            </Field>
+            <Field label={`VIDÉO (OBLIGATOIRE · MAX ${MAX_VIDEO_SECONDS}S · ${MAX_VIDEO_MB} MB)`}>
               <label className="flex items-center gap-3 px-4 py-3 border border-dashed border-[#262626] bg-black cursor-pointer hover:border-[#9AB8FF] transition">
                 <Upload className="h-5 w-5 text-[#9AB8FF]" />
-                <span className="text-sm text-gray-400">{file ? file.name : "Sélectionne une vidéo de ta session"}</span>
-                <input data-testid="video-file-input" type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="hidden" />
+                <span className="text-sm text-gray-400">
+                  {file
+                    ? `${file.name}${videoDuration != null ? ` · ${Math.ceil(videoDuration)}s` : ""}`
+                    : `Sélectionne un clip (max ${MAX_VIDEO_SECONDS}s)`}
+                </span>
+                <input
+                  data-testid="video-file-input"
+                  type="file"
+                  accept="video/*"
+                  onChange={async (e) => {
+                    const picked = e.target.files?.[0] || null;
+                    setError(null);
+                    if (!picked) {
+                      setFile(null);
+                      setVideoDuration(null);
+                      return;
+                    }
+                    if (picked.size > MAX_VIDEO_MB * 1024 * 1024) {
+                      setError(`Vidéo trop lourde (max ${MAX_VIDEO_MB} MB).`);
+                      e.target.value = "";
+                      setFile(null);
+                      setVideoDuration(null);
+                      return;
+                    }
+                    try {
+                      const duration = await readVideoDuration(picked);
+                      if (duration > MAX_VIDEO_SECONDS) {
+                        setError(
+                          `Vidéo trop longue (${Math.ceil(duration)}s). Coupe ton clip à ${MAX_VIDEO_SECONDS} secondes maximum.`
+                        );
+                        e.target.value = "";
+                        setFile(null);
+                        setVideoDuration(null);
+                        return;
+                      }
+                      setVideoDuration(duration);
+                      setFile(picked);
+                    } catch {
+                      setVideoDuration(null);
+                      setFile(picked);
+                    }
+                  }}
+                  className="hidden"
+                />
               </label>
+              <p className="text-xs text-gray-500 mt-2">
+                Concentre-toi sur une seule figure ou manœuvre — 15 à 20 secondes suffisent pour une analyse précise.
+              </p>
             </Field>
             {error && <div className="text-red-500 text-sm" data-testid="analysis-error">{error}</div>}
             <button
@@ -123,7 +220,16 @@ export default function VideoAnalysis() {
                 <div className="text-gray-500 text-xs mt-2">Quelques secondes</div>
               </div>
             )}
-            {result && <StructuredAnalysis data={result.structured || {}} />}
+            {result && (
+              <>
+                {result.dev_mode && (
+                  <div className="mb-4 p-3 border border-amber-500/40 bg-amber-500/10 text-amber-200 text-xs">
+                    Mode démo — analyse simplifiée pour les tests locaux.
+                  </div>
+                )}
+                <StructuredAnalysis data={result.structured || {}} />
+              </>
+            )}
           </div>
         </div>
 
@@ -134,7 +240,7 @@ export default function VideoAnalysis() {
               {result && (
                 <button
                   data-testid="new-analysis-btn"
-                  onClick={() => { setResult(null); setDescription(""); setFile(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  onClick={() => { setResult(null); setTrick(""); setProblem(""); setConditions(""); setFile(null); setVideoDuration(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                   className="text-xs font-display tracking-wider text-[#9AB8FF] hover:underline"
                 >
                   + NOUVELLE ANALYSE
@@ -161,7 +267,7 @@ export default function VideoAnalysis() {
                     </div>
                     <div className="text-gray-300 line-clamp-2 mb-2">{h.description}</div>
                     <div className="text-gray-400 text-xs line-clamp-3">
-                      {h.structured?.headline || h.feedback?.slice(0, 200)}
+                      {kitesurfHeadline(h.structured) || h.structured?.headline || h.feedback?.slice(0, 200)}
                     </div>
                     {isActive && (
                       <div className="mt-2 text-[10px] font-display tracking-widest text-[#9AB8FF]">▸ AFFICHÉ CI-DESSUS</div>
@@ -179,27 +285,368 @@ export default function VideoAnalysis() {
         .va-input:focus { border-color: #9AB8FF; }
       `}</style>
     </div>
+    </FeatureGate>
   );
 }
 
 function StructuredAnalysis({ data }) {
-  const { headline, diagnostic, corrections = [], drills = [], securite, niveau_estime } = data;
+  if (isKitesurfExpert(data)) {
+    return <KitesurfExpertAnalysis data={data} />;
+  }
+  return <LegacyCoachAnalysis data={data} />;
+}
+
+function isKitesurfExpert(data) {
+  if (!data || typeof data !== "object") return false;
+  return (
+    data.stance !== undefined
+    || data.body_rotation !== undefined
+    || data.rotation_degrees !== undefined
+    || data.kiteloop !== undefined
+  );
+}
+
+function readField(data, key) {
+  const val = data?.[key];
+  if (val && typeof val === "object" && "prediction" in val) {
+    return {
+      prediction: val.prediction || "",
+      confidence: val.confidence ?? null,
+      alternatives: Array.isArray(val.alternatives) ? val.alternatives : [],
+    };
+  }
+  const legacyConf = data?.confidence?.[key];
+  return {
+    prediction: typeof val === "string" ? val : "",
+    confidence: legacyConf ?? null,
+    alternatives: [],
+  };
+}
+
+function kitesurfHeadline(data) {
+  if (!isKitesurfExpert(data)) return "";
+  const parts = [
+    readField(data, "body_rotation").prediction,
+    readField(data, "rotation_degrees").prediction,
+    readField(data, "rotation_direction").prediction,
+  ].filter((v) => v && v !== "Impossible à déterminer");
+  ["kiteloop", "downloop", "heliloop"].forEach((k) => {
+    if (readField(data, k).prediction.toLowerCase() === "oui") parts.push(k.replace("_", " "));
+  });
+  return parts.join(" · ");
+}
+
+function KitesurfExpertAnalysis({ data }) {
+  const headline = kitesurfHeadline(data) || "Analyse kitesurf";
+  const exec = data.execution || {};
+  const framesCount = data.frames_analyzed;
+
+  const fieldKeys = [
+    ["stance", "Stance"],
+    ["approach", "Approche"],
+    ["rotation_degrees", "Rotation"],
+    ["rotation_direction", "Sens rotation"],
+    ["body_rotation", "Rotation corps"],
+    ["kiteloop", "Kiteloop"],
+    ["downloop", "Downloop"],
+    ["heliloop", "Heliloop"],
+    ["bar_position", "Barre"],
+    ["hands", "Mains"],
+    ["grab", "Grab"],
+    ["board_off", "Board off"],
+    ["one_foot", "One foot"],
+    ["kite_position", "Position aile"],
+    ["landing", "Réception"],
+  ];
+
   return (
     <div className="space-y-4" data-testid="structured-analysis">
-      {/* Headline */}
+      <div className="p-6 border-2 border-[#9AB8FF] bg-gradient-to-br from-[#9AB8FF]/15 to-transparent">
+        <div className="flex items-center gap-2 text-[#9AB8FF] font-display text-xs tracking-widest mb-2">
+          <Sparkles className="h-3 w-3" /> ANALYSE EXPERT KITESURF
+        </div>
+        <div className="font-display text-2xl md:text-3xl leading-tight">{headline}</div>
+        <p className="text-gray-500 text-xs mt-2">
+          Source : vidéo uniquement — {framesCount ? `${framesCount} images analysées` : "échantillonnage intelligent"}
+        </p>
+      </div>
+
+      <Section icon={<ListChecks className="h-4 w-4" />} title="OBSERVATIONS">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          {fieldKeys.map(([key, label]) => {
+            const { prediction, confidence, alternatives } = readField(data, key);
+            if (!prediction) return null;
+            return (
+              <div key={key} className="p-3 border border-[#262626] bg-black/30">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-gray-500 font-display text-xs tracking-wider">{label.toUpperCase()}</span>
+                  {confidence != null && confidence > 0 && (
+                    <span className={`text-[10px] font-display ${confidence >= 90 ? "text-green-400" : "text-amber-400"}`}>
+                      {confidence}%
+                    </span>
+                  )}
+                </div>
+                <p className="text-white">{prediction}</p>
+                {alternatives.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {alternatives.map((alt, i) => (
+                      <p key={i} className="text-xs text-gray-500">
+                        Alt. {alt.name} ({alt.confidence}%)
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Section>
+
+      {hasValues(exec) && (
+        <Section icon={<Target className="h-4 w-4" />} title="QUALITÉ D'EXÉCUTION">
+          <DetailGrid data={exec} labels={{
+            height: "Hauteur",
+            amplitude: "Amplitude",
+            control: "Contrôle",
+            timing: "Timing",
+          }} />
+        </Section>
+      )}
+    </div>
+  );
+}
+
+function LegacyCoachAnalysis({ data }) {
+  const {
+    headline,
+    diagnostic,
+    figure_declaree,
+    figure_observee,
+    probleme_identifie,
+    correspondance_description,
+    ecart_description,
+    observations_mouvement,
+    analyse_voile,
+    conditions,
+    decollage,
+    barre,
+    rotation,
+    grab,
+    hand_pass,
+    reception,
+    confiance,
+    confiance_explication,
+    corrections = [],
+    drills = [],
+    securite,
+    niveau_estime,
+  } = data;
+
+  const obs = observations_mouvement || {};
+  const voile = analyse_voile || {};
+  const loopLabels = {
+    kiteloop: "Kiteloop",
+    downloop: "Downloop",
+    heli_loop: "Heli loop",
+    loop_partiel: "Loop partiel",
+    demi_loop: "Demi-loop",
+    loop_engage: "Loop engagé",
+    loop_avorte: "Loop avorté",
+    absence_de_loop: "Absence de loop",
+    contraloop: "Contraloop",
+    indetermine: "Indéterminé",
+  };
+  const loopType = (voile.type_manoeuvre || "").toLowerCase().replace(/\s+/g, "_");
+  const match = (correspondance_description || "").toLowerCase();
+  const isAuto = match === "auto";
+  const ignoreUser = match === "ignore";
+  const matchColor =
+    match === "oui" ? "text-green-400" : match === "non" ? "text-red-400" : "text-amber-400";
+  const showFigureSection =
+    figure_observee || probleme_identifie || (figure_declaree && !isAuto && !ignoreUser);
+
+  return (
+    <div className="space-y-4" data-testid="structured-analysis">
       <div className="p-6 border-2 border-[#9AB8FF] bg-gradient-to-br from-[#9AB8FF]/15 to-transparent">
         <div className="flex items-center gap-2 text-[#9AB8FF] font-display text-xs tracking-widest mb-2">
           <Sparkles className="h-3 w-3" /> SYNTHÈSE
         </div>
         <div className="font-display text-2xl md:text-3xl leading-tight">{headline}</div>
-        {niveau_estime && (
-          <div className="mt-3 inline-flex items-center gap-2 text-xs font-display tracking-wider text-gray-300">
-            <Award className="h-3 w-3 text-[#9AB8FF]" /> NIVEAU LU : {niveau_estime.toUpperCase()}
-          </div>
+        <div className="mt-3 flex flex-wrap gap-3">
+          {niveau_estime && (
+            <span className="inline-flex items-center gap-2 text-xs font-display tracking-wider text-gray-300">
+              <Award className="h-3 w-3 text-[#9AB8FF]" /> NIVEAU : {niveau_estime.toUpperCase()}
+            </span>
+          )}
+          {confiance && (
+            <span className="inline-flex items-center gap-2 text-xs font-display tracking-wider text-gray-300">
+              CONFIANCE : {confiance.toUpperCase()}
+            </span>
+          )}
+        </div>
+        {confiance_explication && (
+          <p className="text-gray-400 text-sm mt-2">{confiance_explication}</p>
         )}
       </div>
 
-      {/* Diagnostic */}
+      {showFigureSection && (
+        <Section icon={<ListChecks className="h-4 w-4" />} title={isAuto || ignoreUser ? "FIGURE DÉTECTÉE (VIDÉO)" : "DESCRIPTION VS VIDÉO"}>
+          <div className="space-y-3 text-sm">
+            {figure_declaree && !isAuto && !ignoreUser && (
+              <div>
+                <span className="text-gray-500 font-display text-xs tracking-wider">TEXTE RIDER (non utilisé pour l&apos;analyse)</span>
+                <p className="text-gray-400 mt-1">{figure_declaree}</p>
+              </div>
+            )}
+            {figure_observee && (
+              <div>
+                <span className="text-gray-500 font-display text-xs tracking-wider">FIGURE OBSERVÉE</span>
+                <p className="text-white mt-1">{figure_observee}</p>
+              </div>
+            )}
+            {probleme_identifie && (
+              <div>
+                <span className="text-gray-500 font-display text-xs tracking-wider">PROBLÈME / CRASH</span>
+                <p className="text-white mt-1">{probleme_identifie}</p>
+              </div>
+            )}
+            {correspondance_description && !isAuto && !ignoreUser && (
+              <div className={`font-display text-xs tracking-wider ${matchColor}`}>
+                CORRESPONDANCE TEXTE : {correspondance_description.toUpperCase()}
+              </div>
+            )}
+            {ecart_description && (
+              <p className="text-amber-200/90 text-sm border-l-2 border-amber-500/50 pl-3">{ecart_description}</p>
+            )}
+          </div>
+        </Section>
+      )}
+
+      {conditions && hasValues(conditions) && (
+        <Section icon={<Target className="h-4 w-4" />} title="1. CONDITIONS">
+          <DetailGrid data={conditions} labels={{
+            direction_rider: "Direction rider",
+            amure: "Amure",
+            main_avant: "Main avant",
+            main_arriere: "Main arrière",
+            sens_deplacement: "Sens déplacement",
+          }} />
+        </Section>
+      )}
+
+      {decollage && hasValues(decollage) && (
+        <Section icon={<Target className="h-4 w-4" />} title="2. DÉCOLLAGE">
+          <DetailGrid data={decollage} labels={{
+            position_corps: "Corps",
+            position_jambes: "Jambes",
+            position_barre: "Barre",
+            border_choquer: "Border / choquer",
+            position_aile_horloge: "Aile (horloge)",
+            trajectoire_aile: "Trajectoire aile",
+            deplacement_mains: "Mains",
+          }} />
+        </Section>
+      )}
+
+      {barre && (
+        <Section icon={<Target className="h-4 w-4" />} title="3. BARRE">
+          <p className="text-gray-200 text-sm">{barre}</p>
+        </Section>
+      )}
+
+      {(loopType || hasValues(voile)) && (
+        <Section icon={<Wind className="h-4 w-4" />} title="4. ANALYSE DE L'AILE">
+          <div className="space-y-3 text-sm">
+            {loopType && (
+              <div className="inline-flex px-3 py-1 border border-[#9AB8FF]/40 bg-[#9AB8FF]/10">
+                <span className="text-[#9AB8FF] font-display text-xs tracking-wider">
+                  {(loopLabels[loopType] || voile.type_manoeuvre).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <DetailGrid data={voile} labels={{
+              position_initiale: "Position initiale",
+              vitesse: "Vitesse",
+              acceleration: "Accélération",
+              ralentissement: "Ralentissement",
+              deplacement: "Déplacement",
+              angle: "Angle",
+              trajectoire: "Trajectoire",
+              sens_loop: "Sens du loop",
+              timing_rider_kite: "Timing rider/kite",
+              erreurs_voile: "Erreurs voile",
+            }} />
+          </div>
+        </Section>
+      )}
+
+      {rotation && hasValues(rotation) && (
+        <Section icon={<Target className="h-4 w-4" />} title="5. ROTATION">
+          <DetailGrid data={rotation} labels={{
+            type: "Type",
+            sens: "Sens (gauche/droite)",
+          }} />
+        </Section>
+      )}
+
+      {grab && hasValues(grab) && (
+        <Section icon={<Target className="h-4 w-4" />} title="6. GRAB">
+          <DetailGrid data={grab} labels={{
+            type: "Grab",
+            main: "Main",
+            carre: "Carre",
+            duree: "Durée",
+          }} />
+        </Section>
+      )}
+
+      {hand_pass && hasValues(hand_pass) && (
+        <Section icon={<Target className="h-4 w-4" />} title="7. PASSAGE DE BARRE">
+          <DetailGrid data={hand_pass} labels={{
+            moment: "Moment",
+            nombre_passes: "Nombre de passes",
+          }} />
+        </Section>
+      )}
+
+      {reception && hasValues(reception) && (
+        <Section icon={<Target className="h-4 w-4" />} title="8. RÉCEPTION">
+          <DetailGrid data={reception} labels={{
+            position_aile: "Position aile",
+            vitesse: "Vitesse",
+            direction: "Direction",
+            jambes: "Jambes",
+            equilibre: "Équilibre",
+            controle: "Contrôle",
+          }} />
+        </Section>
+      )}
+
+      {(obs.rider || obs.kite || obs.board) && (
+        <Section icon={<Target className="h-4 w-4" />} title="LECTURE DU MOUVEMENT">
+          <div className="grid grid-cols-1 gap-4 text-sm">
+            {obs.rider && (
+              <div>
+                <div className="text-[#9AB8FF] font-display text-xs tracking-wider mb-1">RIDER</div>
+                <p className="text-gray-200">{obs.rider}</p>
+              </div>
+            )}
+            {obs.kite && (
+              <div>
+                <div className="text-[#9AB8FF] font-display text-xs tracking-wider mb-1">KITE / VOILE</div>
+                <p className="text-gray-200">{obs.kite}</p>
+              </div>
+            )}
+            {obs.board && (
+              <div>
+                <div className="text-[#9AB8FF] font-display text-xs tracking-wider mb-1">BOARD</div>
+                <p className="text-gray-200">{obs.board}</p>
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
+
       {diagnostic && (
         <Section icon={<ListChecks className="h-4 w-4" />} title="DIAGNOSTIC">
           <p className="text-gray-200 leading-relaxed">{diagnostic}</p>
@@ -248,6 +695,30 @@ function StructuredAnalysis({ data }) {
   );
 }
 
+function hasValues(obj) {
+  if (!obj || typeof obj !== "object") return false;
+  return Object.values(obj).some((v) => v != null && String(v).trim() !== "");
+}
+
+function DetailGrid({ data, labels }) {
+  if (!data) return null;
+  const entries = Object.entries(labels).filter(([key]) => {
+    const val = data[key];
+    return val != null && String(val).trim() !== "" && key !== "type_manoeuvre";
+  });
+  if (entries.length === 0) return null;
+  return (
+    <div className="grid grid-cols-1 gap-3 text-sm">
+      {entries.map(([key, label]) => (
+        <div key={key}>
+          <div className="text-gray-500 font-display text-xs tracking-wider mb-1">{label.toUpperCase()}</div>
+          <p className="text-gray-200">{data[key]}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Section({ icon, title, children, accent }) {
   const border = accent === "amber" ? "border-amber-500/40 bg-amber-500/5" : "border-[#262626] bg-[#0A0A0A]";
   const tone = accent === "amber" ? "text-amber-400" : "text-[#9AB8FF]";
@@ -270,17 +741,3 @@ function Field({ label, children }) {
   );
 }
 
-function LockedView({ title }) {
-  return (
-    <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
-      <div className="max-w-2xl mx-auto text-center p-12 border border-[#262626] bg-[#0A0A0A]">
-        <Lock className="h-16 w-16 text-[#9AB8FF] mx-auto mb-6" />
-        <h1 className="font-display text-3xl md:text-5xl mb-4">{title}</h1>
-        <p className="text-gray-400 mb-8">Cette fonctionnalité nécessite un abonnement actif.</p>
-        <Link to="/pricing" className="inline-block bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-8 py-4 font-display tracking-wider">
-          VOIR LES ABONNEMENTS
-        </Link>
-      </div>
-    </div>
-  );
-}

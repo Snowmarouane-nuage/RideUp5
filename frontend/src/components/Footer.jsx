@@ -13,7 +13,8 @@ export default function Footer() {
             </div>
           </div>
           <p className="text-sm text-gray-400 mt-4 max-w-md">
-            Plateforme de coaching personnel pour rideurs de kitesurf, wakeboard, foil et surf. Analyse IA, cours en ligne et recommandations de spots.
+            Coaching kitesurf, wakeboard, foil et surf en ligne. Analyse vidéo de figures, coach personnel,
+            cours structurés et Spot Finder selon le vent — pour progresser session après session.
           </p>
         </div>
         <div>
@@ -21,7 +22,10 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-gray-400">
             <li><Link to="/pricing" className="hover:text-[#9AB8FF]">Abonnements</Link></li>
             <li><Link to="/courses" className="hover:text-[#9AB8FF]">Cours</Link></li>
-            <li><Link to="/video-analysis" className="hover:text-[#9AB8FF]">Analyse vidéo</Link></li>
+            <li><Link to="/video-analysis" className="hover:text-[#9AB8FF]">Analyse vidéo kitesurf</Link></li>
+            <li><Link to="/coach" className="hover:text-[#9AB8FF]">Coach kitesurf</Link></li>
+            <li><Link to="/spots-kitesurf" className="hover:text-[#9AB8FF]">Catalogue spots (6000+)</Link></li>
+            <li><Link to="/meilleurs-spots-kitesurf-weekend" className="hover:text-[#9AB8FF]">Spots week-end</Link></li>
             <li><Link to="/spot-recommender" className="hover:text-[#9AB8FF]">Spot Finder</Link></li>
           </ul>
         </div>

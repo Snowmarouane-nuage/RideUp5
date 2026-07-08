@@ -52,7 +52,12 @@ export default function PaymentSuccess() {
               <Check className="h-10 w-10 text-white" />
             </div>
             <h1 className="font-display text-3xl mb-2">PAIEMENT CONFIRMÉ</h1>
-            <p className="text-gray-400 mb-6">Ton abonnement RIDE’UP est actif. Bienvenue dans la team.</p>
+            <p className="text-gray-400 mb-6">
+              Ton abonnement RIDE&apos;UP est actif. Bienvenue dans la team.
+              {sessionId?.startsWith("dev_") && (
+                <span className="block mt-2 text-xs text-gray-500">Mode développement (Stripe non configuré)</span>
+              )}
+            </p>
             <button data-testid="goto-dashboard" onClick={() => navigate("/dashboard")} className="bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-8 py-4 font-display tracking-wider">
               ACCÉDER AU DASHBOARD
             </button>

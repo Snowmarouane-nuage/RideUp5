@@ -2,6 +2,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { LOGO_URL } from "@/lib/api";
+import { loginPath } from "@/lib/auth";
+import { isSiteAdmin } from "@/lib/admin";
 import { LogOut, User, Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
@@ -11,6 +13,7 @@ const NAV_LINKS = [
   { to: "/courses", label: "COURS", testId: "nav-courses" },
   { to: "/video-analysis", label: "ANALYSE", testId: "nav-analysis" },
   { to: "/spot-recommender", label: "SPOTS", testId: "nav-spots" },
+  { to: "/spots-kitesurf", label: "CATALOGUE", testId: "nav-catalog" },
   { to: "/meilleurs-spots-kitesurf-weekend", label: "WEEK-END", testId: "nav-weekend", badge: "LIVE" },
 ];
 
@@ -29,11 +32,7 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-  const handleLogin = () => {
-    const redirectUrl = window.location.origin + "/auth/callback";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
-  };
+  const handleLogin = () => navigate(loginPath("/dashboard"));
 
   const isLanding = location.pathname === "/";
 
@@ -59,6 +58,9 @@ export default function Navbar() {
           ))}
           {user && (
             <Link to="/dashboard" data-testid="nav-dashboard" className="hover:text-[#9AB8FF] transition">DASHBOARD</Link>
+          )}
+          {isSiteAdmin(user) && (
+            <Link to="/admin" data-testid="nav-admin" className="hover:text-[#9AB8FF] transition text-[#9AB8FF]/80">ADMIN</Link>
           )}
         </nav>
 
@@ -135,6 +137,11 @@ export default function Navbar() {
           {user && (
             <Link to="/dashboard" data-testid="mobile-nav-dashboard" className="py-3 border-b border-[#1a1a1a] text-lg hover:text-[#9AB8FF] transition">
               DASHBOARD
+            </Link>
+          )}
+          {isSiteAdmin(user) && (
+            <Link to="/admin" data-testid="mobile-nav-admin" className="py-3 border-b border-[#1a1a1a] text-lg text-[#9AB8FF] hover:text-white transition">
+              ADMIN SITE
             </Link>
           )}
           {!user && (

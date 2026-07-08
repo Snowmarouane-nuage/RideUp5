@@ -1,30 +1,41 @@
 import { useState } from "react";
 import { Check, Lock } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { loginPath } from "@/lib/auth";
 
 export default function Pricing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(null);
+  const [error, setError] = useState(null);
 
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const subscribe = async (plan) => {
     if (!user) {
-      const redirectUrl = window.location.origin + "/auth/callback";
-      window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+      navigate(loginPath("/pricing"));
       return;
     }
+    setError(null);
     setLoading(plan);
     try {
       const r = await api.post("/checkout/session", {
         plan,
         origin_url: window.location.origin,
       });
-      window.location.href = r.data.url;
+      if (r.data?.url) {
+        window.location.href = r.data.url;
+        return;
+      }
+      setError("Réponse invalide du serveur de paiement.");
+      setLoading(null);
     } catch (e) {
-      alert("Erreur lors de la création du paiement");
+      const detail = e.response?.data?.detail;
+      setError(
+        typeof detail === "string"
+          ? detail
+          : "Erreur lors de la création du paiement. Réessaie dans quelques instants."
+      );
       setLoading(null);
     }
   };
@@ -36,11 +47,11 @@ export default function Pricing() {
       price: "9.99",
       tagline: "Progresse avec les outils essentiels",
       features: [
-        "Analyse vidéo IA illimitée",
-        "Accès aux cours kite (disponibles très bientôt)",
-        "Tous niveaux (débutant → avancé)",
-        "Historique de tes analyses",
-        "Support communauté",
+        "Analyse vidéo kitesurf illimitée (clips 20s)",
+        "Coach personnel & roadmap de figures",
+        "Cours kitesurf en ligne (débutant → avancé)",
+        "Historique de tes analyses vidéo",
+        "Support communauté riders",
       ],
       cta: "DÉMARRER STANDARD",
       highlight: false,
@@ -52,11 +63,12 @@ export default function Pricing() {
       tagline: "L'arsenal complet du rideur sérieux",
       features: [
         "Tout du plan Standard",
-        "🎯 Spot Finder IA (poids + matériel + vent réel)",
+        "Spot Finder kitesurf (vent réel + ton matériel)",
+        "Meilleurs spots kitesurf week-end",
         "Recommandations sécurité personnalisées",
-        "Données vent en temps réel (Open-Meteo)",
-        "Analyses prioritaires",
-        "Conseils matériel personnalisés par IA",
+        "Données vent en temps réel",
+        "Analyses vidéo prioritaires",
+        "Conseils quiver & matériel sur mesure",
       ],
       cta: "PASSER PREMIUM",
       highlight: true,
@@ -68,8 +80,11 @@ export default function Pricing() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-3">ABONNEMENTS</div>
-          <h1 className="font-display text-5xl md:text-7xl leading-none mb-4">CHOISIS TON <span className="text-[#9AB8FF]">PLAN</span></h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">Sans engagement. Annule à tout moment. Tous les plans incluent l'analyse vidéo IA.</p>
+          <h1 className="font-display text-5xl md:text-7xl leading-none mb-4">ABONNEMENT <span className="text-[#9AB8FF]">COACHING KITESURF</span></h1>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            Choisis ton plan RIDE&apos;UP : analyse vidéo illimitée, coach personnel et Spot Finder Premium.
+            Sans engagement — annule à tout moment.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
@@ -121,6 +136,11 @@ export default function Pricing() {
         <div className="mt-12 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
           <Lock className="h-3 w-3" /> Paiement sécurisé via Stripe · Activation immédiate
         </div>
+        {error && (
+          <p className="mt-6 text-center text-sm text-red-400 max-w-lg mx-auto" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );

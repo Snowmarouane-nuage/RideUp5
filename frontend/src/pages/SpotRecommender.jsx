@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
-import { Wind, MapPin, Shield, Crown, Sparkles, Navigation, AlertCircle } from "lucide-react";
+import { Wind, MapPin, Shield, Sparkles, Navigation, AlertCircle } from "lucide-react";
+import { FeatureGate } from "@/components/FeatureGate";
+import DangerBadge from "@/components/DangerBadge";
 
 export default function SpotRecommender() {
-  const { user } = useAuth();
   const [{ today, maxDate }] = useState(() => ({
     today: new Date().toISOString().slice(0, 10),
     maxDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
@@ -24,24 +24,6 @@ export default function SpotRecommender() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const isPremium = user?.plan === "premium";
-
-  if (!isPremium) {
-    return (
-      <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
-        <div className="max-w-3xl mx-auto text-center p-12 border-2 border-[#9AB8FF]/40 bg-[#0A0A0A]">
-          <Crown className="h-16 w-16 text-[#9AB8FF] mx-auto mb-6" />
-          <h1 className="font-display text-3xl md:text-5xl mb-4">SPOT FINDER · PREMIUM</h1>
-          <p className="text-gray-400 mb-2">L&apos;algo croise ton poids, ton matériel, ta localisation et le vent réel pour te proposer le spot idéal.</p>
-          <p className="text-gray-400 mb-8">Disponible uniquement sur l&apos;abonnement Premium (15.99€/mois).</p>
-          <Link data-testid="spot-upgrade" to="/pricing" className="inline-block bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-8 py-4 font-display tracking-wider">
-            PASSER PREMIUM
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   const detectLocation = () => {
     setGeoError(null);
     setGeoLoading(true);
@@ -54,7 +36,7 @@ export default function SpotRecommender() {
       async (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
-        // Reverse geocode via Open-Meteo
+        // Reverse geocode
         let label = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
         try {
           const r = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=fr`);
@@ -118,11 +100,16 @@ export default function SpotRecommender() {
   };
 
   return (
+    <FeatureGate title="SPOT FINDER · PREMIUM" requirePremium>
     <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-2">PREMIUM · SPOT FINDER</div>
-        <h1 className="font-display text-4xl md:text-6xl mb-3">LE BON SPOT, <span className="text-[#9AB8FF]">LE BON JOUR</span></h1>
-        <p className="text-gray-400 max-w-3xl mb-10">Données vent en temps réel via Open-Meteo. L&apos;IA score les spots selon ton matériel, ton niveau, et la distance que tu peux parcourir.</p>
+        <h1 className="font-display text-4xl md:text-6xl mb-3">SPOT FINDER <span className="text-[#9AB8FF]">KITESURF</span></h1>
+        <p className="text-gray-400 max-w-3xl mb-10">
+          Trouve le meilleur spot selon les prévisions météo, ton quiver, ton niveau
+          (débutant → pro) et la distance. Les spots engagés (Palm Beach Cannes, Guincho…)
+          sont proposés aux riders avancés et pro uniquement.
+        </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <form onSubmit={submit} className="lg:col-span-1 p-8 border border-[#262626] bg-[#0A0A0A] space-y-4" data-testid="spot-form">
@@ -324,7 +311,13 @@ export default function SpotRecommender() {
                           <span className="text-xs px-2 py-0.5 border border-[#9AB8FF] text-[#9AB8FF] font-display tracking-wider">{s.distance_km} KM</span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-400 mb-2">Type: {s.type} · Niveau spot: {s.level} · Vent idéal: {s.ideal_kts[0]}–{s.ideal_kts[1]} kts</div>
+                      <div className="text-sm text-gray-400 mb-2 flex flex-wrap items-center gap-2">
+                        <span>Type: {s.type} · Min. {s.min_level || s.level} · Vent idéal: {s.ideal_kts[0]}–{s.ideal_kts[1]} kts</span>
+                        <DangerBadge label={s.danger_label} danger={s.danger} />
+                      </div>
+                      {s.hazards?.length > 0 && (
+                        <p className="text-xs text-amber-400/90 mb-2">⚠ {s.hazards.slice(0, 3).join(" · ")}</p>
+                      )}
                   <div className="flex items-center gap-4 text-sm flex-wrap">
                     <div className="flex items-center gap-1"><Wind className="h-4 w-4 text-[#9AB8FF]" /> <span className="font-display text-lg">{s.wind_kts_now?.toFixed(1)}</span> kts</div>
                     {s.recommended_kite && (
@@ -348,6 +341,7 @@ export default function SpotRecommender() {
         .sr-input:focus { border-color: #9AB8FF; }
       `}</style>
     </div>
+    </FeatureGate>
   );
 }
 

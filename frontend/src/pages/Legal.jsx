@@ -28,7 +28,10 @@ export function MentionsLegales() {
       <p>[Nom du responsable légal à compléter]</p>
 
       <h2 className="font-display text-2xl text-white mt-8">3. Hébergement</h2>
-      <p>Le site est hébergé par Emergent (infrastructure cloud Kubernetes).</p>
+      <p>
+        Le site RIDE&apos;UP est hébergé par l&apos;éditeur ou son prestataire d&apos;hébergement
+        ([nom et adresse de l&apos;hébergeur à compléter — ex. Vercel, Railway, OVH…]).
+      </p>
 
       <h2 className="font-display text-2xl text-white mt-8">4. Propriété intellectuelle</h2>
       <p>L'ensemble des contenus présents sur le site RIDE’UP (textes, images, logos, vidéos pédagogiques, design, analyses IA) est protégé par le droit d'auteur et reste la propriété exclusive de l'éditeur ou de ses partenaires. Toute reproduction sans autorisation préalable est interdite.</p>
@@ -70,7 +73,7 @@ export function Confidentialite() {
       <h2 className="font-display text-2xl text-white">1. Données collectées</h2>
       <p>Lorsque tu utilises RIDE’UP, nous collectons :</p>
       <ul className="list-disc pl-6 space-y-2">
-        <li>Identifiants Google (nom, email, photo de profil) via OAuth</li>
+        <li>Identifiants de compte (nom, email) créés sur RIDE&apos;UP</li>
         <li>Vidéos téléversées pour l'analyse IA</li>
         <li>Données techniques saisies (poids, matériel, niveau) pour le Spot Finder</li>
         <li>Historique de tes analyses et paiements</li>
@@ -81,10 +84,10 @@ export function Confidentialite() {
 
       <h2 className="font-display text-2xl text-white mt-8">3. Sous-traitants</h2>
       <ul className="list-disc pl-6 space-y-2">
-        <li><strong>Google</strong> : authentification</li>
+        <li><strong>Resend</strong> (ou prestataire email) : confirmation de compte et réinitialisation mot de passe</li>
         <li><strong>Stripe</strong> : paiements</li>
-        <li><strong>Anthropic (Claude)</strong> : moteur d'analyse IA</li>
-        <li><strong>Open-Meteo</strong> : données météo pour Spot Finder</li>
+        <li><strong>OpenAI / Anthropic</strong> : analyse vidéo et coaching personnalisé</li>
+        <li><strong>Prestataires météo</strong> : prévisions vent pour Spot Finder et classement week-end</li>
       </ul>
 
       <h2 className="font-display text-2xl text-white mt-8">4. Tes droits (RGPD)</h2>
@@ -104,7 +107,7 @@ export function Cookies() {
 
       <h2 className="font-display text-2xl text-white mt-8">2. Cookies utilisés</h2>
       <ul className="list-disc pl-6 space-y-2">
-        <li><strong>session_token</strong> (httpOnly, sécurisé) — Garde ta session connectée. Durée : 7 jours.</li>
+        <li><strong>session_token</strong> (httpOnly, sécurisé) — Garde ta session connectée. Durée : 30 jours.</li>
         <li><strong>Cookies Stripe</strong> — Indispensables au tunnel de paiement.</li>
       </ul>
       <p>Nous n'utilisons <strong>aucun cookie publicitaire</strong> ni de tracking marketing tiers.</p>

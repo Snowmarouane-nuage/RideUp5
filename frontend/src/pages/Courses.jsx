@@ -3,14 +3,22 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
 import { Play, Lock, Clock } from "lucide-react";
+import { FALLBACK_COURSES } from "@/constants/courses";
 
 export default function Courses() {
   const { user } = useAuth();
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState(FALLBACK_COURSES);
+  const [apiError, setApiError] = useState(false);
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    api.get("/courses").then((r) => setCourses(r.data));
+    api
+      .get("/courses")
+      .then((r) => {
+        setCourses(r.data);
+        setApiError(false);
+      })
+      .catch(() => setApiError(true));
   }, []);
 
   const locked = !user?.plan;
@@ -20,8 +28,11 @@ export default function Courses() {
     <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-2">BIBLIOTHÈQUE</div>
-        <h1 className="font-display text-4xl md:text-6xl mb-6">COURS <span className="text-[#9AB8FF]">RIDE’UP</span></h1>
-        <p className="text-gray-400 max-w-2xl mb-10">Modules vidéo structurés pour progresser, du débutant à l'avancé. Kitesurf disponible aujourd'hui · Wakeboard et Foil bientôt.</p>
+        <h1 className="font-display text-4xl md:text-6xl mb-6">COURS <span className="text-[#9AB8FF]">KITESURF EN LIGNE</span></h1>
+        <p className="text-gray-400 max-w-2xl mb-10">
+          Modules vidéo pour apprendre le kitesurf et progresser en freestyle : bases, sécurité, transitions
+          et figures. Wakeboard et foil arrivent bientôt.
+        </p>
 
         <div className="flex flex-wrap gap-2 mb-10">
           {[
@@ -45,7 +56,24 @@ export default function Courses() {
           ))}
         </div>
 
-        {locked && (
+        {apiError && (
+          <div className="mb-6 p-4 border border-amber-500/40 bg-amber-500/10 text-amber-200 text-sm">
+            Catalogue affiché en mode hors-ligne. Démarre le backend pour synchroniser les données live.
+          </div>
+        )}
+
+        {!user && (
+          <div className="mb-10 p-6 border border-[#262626] bg-[#0A0A0A] flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="font-display text-xl">CONNECTE-TOI</div>
+              <div className="text-sm text-gray-400">Le catalogue est visible, mais la progression nécessite un compte.</div>
+            </div>
+            <Link data-testid="courses-login" to="/pricing" className="border border-[#9AB8FF] text-[#9AB8FF] px-5 py-3 font-display tracking-wider">
+              COMMENCER
+            </Link>
+          </div>
+        )}
+        {user && locked && (
           <div className="mb-10 p-6 border border-[#9AB8FF]/50 bg-[#9AB8FF]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="font-display text-xl">ACCÈS RESTREINT</div>

@@ -2,19 +2,53 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
-import { Video, BookOpen, MapPin, Crown, ArrowRight, Lock, Award, TrendingUp, Calendar, Sparkles, MessageCircle } from "lucide-react";
+import { loginPath } from "@/lib/auth";
+import { Video, BookOpen, MapPin, Crown, ArrowRight, Lock, Award, TrendingUp, Calendar, Sparkles, MessageCircle, CreditCard } from "lucide-react";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const openBillingPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const r = await api.post("/billing/portal", { return_url: window.location.origin + "/dashboard" });
+      window.location.href = r.data.url;
+    } catch {
+      alert("Impossible d'ouvrir le portail Stripe. Vérifie que tu as un abonnement actif.");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
     api.get("/dashboard/stats").then((r) => setStats(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, [user]);
 
-  if (!user) return null;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white pt-28 px-6 flex items-center justify-center">
+        <div className="h-12 w-12 rounded-full border-4 border-[#9AB8FF] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black text-white pt-28 pb-20 px-6">
+        <div className="max-w-2xl mx-auto text-center p-12 border border-[#262626] bg-[#0A0A0A]">
+          <h1 className="font-display text-3xl md:text-5xl mb-4">TON <span className="text-[#9AB8FF]">DASHBOARD</span></h1>
+          <p className="text-gray-400 mb-8">Connecte-toi pour suivre ta progression, tes analyses et ton coach IA.</p>
+          <Link to={loginPath("/dashboard")} className="inline-block bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-8 py-4 font-display tracking-wider">
+            SE CONNECTER
+          </Link>
+        </div>
+      </div>
+    );
+  }
   const isPremium = user.plan === "premium";
   const hasPlan = !!user.plan;
 
@@ -27,11 +61,21 @@ export default function Dashboard() {
             <h1 className="font-display text-4xl md:text-6xl">SALUT <span className="text-[#9AB8FF]">{user.name.split(" ")[0].toUpperCase()}</span></h1>
             <p className="text-gray-400 mt-2">Voici l&apos;état de ta progression.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {hasPlan ? (
-              <div className="px-4 py-2 border border-[#9AB8FF] text-[#9AB8FF] font-display text-sm tracking-wider flex items-center gap-2">
-                <Crown className="h-4 w-4" /> {user.plan.toUpperCase()} ACTIF
-              </div>
+              <>
+                <div className="px-4 py-2 border border-[#9AB8FF] text-[#9AB8FF] font-display text-sm tracking-wider flex items-center gap-2">
+                  <Crown className="h-4 w-4" /> {user.plan.toUpperCase()} ACTIF
+                </div>
+                <button
+                  type="button"
+                  onClick={openBillingPortal}
+                  disabled={portalLoading}
+                  className="px-4 py-2 border border-[#262626] hover:border-[#9AB8FF] text-gray-300 hover:text-white font-display text-sm tracking-wider flex items-center gap-2 transition disabled:opacity-50"
+                >
+                  <CreditCard className="h-4 w-4" /> {portalLoading ? "..." : "GÉRER L'ABONNEMENT"}
+                </button>
+              </>
             ) : (
               <Link data-testid="dash-upgrade" to="/pricing" className="bg-[#9AB8FF] hover:bg-[#7A9CE8] text-white px-5 py-3 font-display tracking-wider transition">
                 ACTIVER UN ABONNEMENT

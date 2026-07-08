@@ -19,9 +19,15 @@ flake8>=7.0.0
 mypy>=1.8.0
 python-jose>=3.3.0
 requests>=2.31.0
+httpx>=0.27.0
 pandas>=2.2.0
 numpy>=1.26.0
 python-multipart>=0.0.9
 jq>=1.6.0
 typer>=0.9.0
-emergentintegrations==0.2.0
+# ridemind_llm: client LLM local (Anthropic / OpenAI HTTP)
+stripe>=8.0.0
+opencv-python-headless>=4.8.0
+Pillow>=10.0.0
+imageio>=2.34.0
+imageio-ffmpeg>=0.5.0

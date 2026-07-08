@@ -2,7 +2,7 @@
 import os
 import requests
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://wave-coach-3.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8000').rstrip('/')
 TOKEN = os.environ.get('TEST_SESSION_TOKEN', 'test_session_1781006912634')
 AUTH = {"Authorization": f"Bearer {TOKEN}"}
 

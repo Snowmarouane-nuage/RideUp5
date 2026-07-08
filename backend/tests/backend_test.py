@@ -3,7 +3,7 @@ import os
 import pytest
 import requests
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://wave-coach-3.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8000').rstrip('/')
 TOKEN = os.environ.get('TEST_SESSION_TOKEN', 'test_session_1781006912634')
 AUTH = {"Authorization": f"Bearer {TOKEN}"}
 
@@ -26,7 +26,7 @@ def test_courses():
 
 
 def test_spots_weather():
-    r = requests.get(f"{BASE_URL}/api/spots/weather", timeout=30)
+    r = requests.get(f"{BASE_URL}/api/spots/weather", params={"country": "France", "limit": 10}, timeout=90)
     assert r.status_code == 200
     data = r.json()
     assert len(data) >= 6
@@ -98,7 +98,9 @@ def test_video_analysis_premium():
         data={
             "sport": "kitesurf",
             "level": "Intermédiaire",
-            "description": "I keep crashing my backroll, falling on my back, wind 22kts, kite 9m",
+            "trick": "Backroll",
+            "problem": "I keep crashing my backroll, falling on my back",
+            "conditions": "wind 22kts, kite 9m",
         }, timeout=60,
     )
     assert r.status_code == 200, r.text
@@ -279,11 +281,18 @@ def test_spot_recommend_tiny_radius_empty():
 # v2: Structured JSON response on /video-analysis
 # ============================================================
 def test_video_analysis_structured():
-    desc = ("Je tente mon premier backroll mais je tombe sur le dos systématiquement. "
-            "Vent 22 kts, kite 9m, board twintip 138.")
+    trick = "Backroll"
+    problem = "Je tombe sur le dos systématiquement à chaque tentative."
+    conditions = "Vent 22 kts, kite 9m, board twintip 138."
     r = requests.post(
         f"{BASE_URL}/api/video-analysis", headers=AUTH,
-        data={"sport": "kitesurf", "level": "Intermédiaire", "description": desc},
+        data={
+            "sport": "kitesurf",
+            "level": "Intermédiaire",
+            "trick": trick,
+            "problem": problem,
+            "conditions": conditions,
+        },
         timeout=90,
     )
     assert r.status_code == 200, r.text
@@ -291,7 +300,10 @@ def test_video_analysis_structured():
     assert "structured" in d
     s = d["structured"]
     # Required fields
-    for k in ["headline", "diagnostic", "corrections", "drills", "securite", "niveau_estime"]:
+    for k in [
+        "headline", "diagnostic", "corrections", "drills", "securite", "niveau_estime",
+        "figure_declaree", "figure_observee", "observations_mouvement",
+    ]:
         assert k in s, f"missing key {k} in structured: {s}"
     assert isinstance(s["headline"], str) and len(s["headline"]) > 0
     assert isinstance(s["diagnostic"], str) and len(s["diagnostic"]) > 0

@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Wind, Video, MapPin, Sparkles, Activity, Target } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { loginPath } from "@/lib/auth";
 
 const HERO_IMAGES = [
   { urls: ["https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?fm=jpg&q=85&w=2000&auto=format&fit=crop"], label: "KITESURF", available: true },
@@ -22,6 +23,7 @@ const FEEDBACK_IMG = "https://images.unsplash.com/photo-1502933691298-84fc145428
 
 export default function Landing() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [slide, setSlide] = useState(0);
 
   useEffect(() => {
@@ -29,21 +31,20 @@ export default function Landing() {
     return () => clearInterval(id);
   }, []);
 
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const handleStart = () => {
     if (user) {
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
       return;
     }
-    const redirectUrl = window.location.origin + "/auth/callback";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    navigate(loginPath("/dashboard"));
   };
 
   return (
-    <div className="bg-black text-white">
+    <main className="bg-black text-white">
       {/* HERO */}
       <section
         data-testid="hero-section"
+        aria-label="Coaching kitesurf et sports de glisse"
         className="relative min-h-[95vh] flex items-center overflow-hidden bg-black"
       >
         {/* Slideshow layers with crossfade */}
@@ -104,10 +105,11 @@ export default function Landing() {
               <Activity className="h-3 w-3" /> COACHING PREMIUM · KITE <span className="text-gray-500 normal-case tracking-normal">+ wake / foil / surf bientôt</span>
             </div>
             <h1 className="font-display text-5xl md:text-7xl lg:text-8xl leading-[0.95] mb-6">
-              PROGRESS<br /><span className="text-[#9AB8FF]">YOUR RIDE.</span>
+              COACHING KITESURF<br /><span className="text-[#9AB8FF]">PROGRESS YOUR RIDE.</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-300 max-w-xl mb-10 leading-relaxed">
-              Analyse vidéo IA, bibliothèque de cours pour tous niveaux et un recommandeur de spots qui calcule le meilleur endroit pour ton matériel et les conditions du jour.
+              Plateforme de coaching pour kitesurf, wakeboard, foil et surf : analyse vidéo de tes figures,
+              coach personnel et Spot Finder selon le vent et ton matériel.
             </p>
             <div className="flex flex-wrap gap-4">
               <button
@@ -148,60 +150,97 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {/* Big card: Video analysis */}
             <div className="md:col-span-7 group relative overflow-hidden border border-[#262626] hover:border-[#9AB8FF]/60 transition" data-testid="feature-video">
-              <img src={VIDEO_IMG} alt="" className="w-full h-80 object-cover opacity-60 group-hover:opacity-80 transition" />
+              <img src={VIDEO_IMG} alt="Analyse vidéo kitesurf — rider en session" className="w-full h-80 object-cover opacity-60 group-hover:opacity-80 transition" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#9AB8FF] text-white text-xs font-display tracking-wider mb-4">
                   <Video className="h-3 w-3" /> ANALYSE IA
                 </div>
-                <h3 className="font-display text-3xl md:text-4xl mb-2">DÉCRYPTE TES SESSIONS</h3>
-                <p className="text-gray-300 max-w-md">Upload ta vidéo, décris ta question. L'agent RIDE’UP te donne un retour technique structuré: diagnostic, corrections, drills.</p>
+                <h3 className="font-display text-3xl md:text-4xl mb-2">ANALYSE VIDÉO KITESURF</h3>
+                <p className="text-gray-300 max-w-md">Envoie un clip de 20 secondes. Un coach expert lit ta figure et te donne diagnostic, corrections et drills pour progresser plus vite.</p>
               </div>
             </div>
 
             {/* Courses */}
             <div className="md:col-span-5 group relative overflow-hidden border border-[#262626] hover:border-[#9AB8FF]/60 transition" data-testid="feature-courses">
-              <img src={COURSE_IMG} alt="" className="w-full h-80 object-cover opacity-60 group-hover:opacity-80 transition" />
+              <img src={COURSE_IMG} alt="Cours kitesurf en ligne pour débutants et avancés" className="w-full h-80 object-cover opacity-60 group-hover:opacity-80 transition" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-white text-black text-xs font-display tracking-wider mb-4">
                   <Sparkles className="h-3 w-3" /> COURS
                 </div>
-                <h3 className="font-display text-3xl mb-2">DÉBUTANT À AVANCÉ</h3>
-                <p className="text-gray-300">Bibliothèque vidéo en construction — premiers modules disponibles très bientôt.</p>
+                <h3 className="font-display text-3xl mb-2">COURS KITESURF EN LIGNE</h3>
+                <p className="text-gray-300">Modules structurés du débutant au rider avancé : bases, freestyle et progression trick par trick.</p>
               </div>
             </div>
 
             {/* AI Feedback / Points d'amélioration */}
             <div className="md:col-span-5 group relative overflow-hidden border border-[#262626] hover:border-[#9AB8FF]/60 transition" data-testid="feature-feedback">
-              <img src={FEEDBACK_IMG} alt="" className="w-full h-80 object-cover opacity-50 group-hover:opacity-75 transition" />
+              <img src={FEEDBACK_IMG} alt="Coaching personnalisé pour corriger une figure de kitesurf" className="w-full h-80 object-cover opacity-50 group-hover:opacity-75 transition" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#9AB8FF] text-white text-xs font-display tracking-wider mb-4">
                   <Target className="h-3 w-3" /> POINTS D'AMÉLIORATION
                 </div>
-                <h3 className="font-display text-3xl mb-2">UN TRUC QUI<br/>NE PASSE PAS ?</h3>
-                <p className="text-gray-300">Décris ta figure ratée — l'IA identifie tes erreurs et te livre des drills concrets pour la corriger.</p>
+                <h3 className="font-display text-3xl mb-2">CORRIGE TES FIGURES</h3>
+                <p className="text-gray-300">Backroll, raley, transition… Décris ce qui bloque : le coach identifie l&apos;erreur et te propose un plan d&apos;entraînement concret.</p>
               </div>
             </div>
 
             {/* Spot finder big */}
             <div className="md:col-span-7 group relative overflow-hidden border border-[#262626] hover:border-[#9AB8FF]/60 transition" data-testid="feature-spots">
-              <img src={SPOT_IMG} alt="" className="w-full h-80 object-cover opacity-50 group-hover:opacity-70 transition" />
+              <img src={SPOT_IMG} alt="Spot Finder kitesurf — choix du spot selon le vent" className="w-full h-80 object-cover opacity-50 group-hover:opacity-70 transition" />
               <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
               <div className="absolute inset-0 flex items-center">
                 <div className="p-8 max-w-md">
                   <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#9AB8FF] text-[#9AB8FF] text-xs font-display tracking-wider mb-4">
                     <MapPin className="h-3 w-3" /> PREMIUM · SPOT FINDER
                   </div>
-                  <h3 className="font-display text-3xl md:text-4xl mb-3">LE BON SPOT,<br/>LE BON JOUR.</h3>
-                  <p className="text-gray-300 mb-4">L'IA croise ton poids, ton matériel et le vent réel pour te proposer le spot le plus safe pour ton niveau.</p>
+                  <h3 className="font-display text-3xl md:text-4xl mb-3">SPOT KITESURF IDÉAL</h3>
+                  <p className="text-gray-300 mb-4">Spot Finder Premium : vent en temps réel, ton quiver et ton niveau pour trouver le spot le plus sûr et le plus fun.</p>
                   <Link to="/pricing" className="inline-flex items-center gap-2 text-[#9AB8FF] font-display tracking-wider hover:gap-4 transition-all">
                     DÉBLOQUER LE PREMIUM <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SEO — contenu indexable */}
+      <section className="py-20 px-6 border-t border-[#262626]" aria-labelledby="seo-why-rideup">
+        <div className="max-w-7xl mx-auto">
+          <h2 id="seo-why-rideup" className="font-display text-3xl md:text-5xl mb-4">
+            POURQUOI CHOISIR <span className="text-[#9AB8FF]">RIDE&apos;UP</span> ?
+          </h2>
+          <p className="text-gray-400 max-w-3xl mb-12 leading-relaxed">
+            RIDE&apos;UP est la plateforme de coaching dédiée aux sports de glisse. Que tu rides en kitesurf,
+            wakeboard, foil ou surf, tu obtiens un retour technique personnalisé, une roadmap de progression
+            et des recommandations de spots adaptées aux conditions du jour.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <article className="p-6 border border-[#262626] bg-[#0A0A0A]">
+              <h3 className="font-display text-xl text-[#9AB8FF] mb-3">Analyse vidéo de figures</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Filme ta session, envoie un clip de 20 secondes et reçois une analyse détaillée :
+                posture, timing du pop, position du kite et conseils pour débloquer ta prochaine figure.
+              </p>
+            </article>
+            <article className="p-6 border border-[#262626] bg-[#0A0A0A]">
+              <h3 className="font-display text-xl text-[#9AB8FF] mb-3">Coach personnel kitesurf</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Roadmap trick par trick, suivi de progression et chat coaching pour avancer
+                du niveau débutant au freestyle avancé, à ton rythme.
+              </p>
+            </article>
+            <article className="p-6 border border-[#262626] bg-[#0A0A0A]">
+              <h3 className="font-display text-xl text-[#9AB8FF] mb-3">Spots &amp; conditions de vent</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Spot Finder et prévisions week-end : trouve où rider selon le vent, ton matériel
+                et ton niveau, en France et en Europe.
+              </p>
+            </article>
           </div>
         </div>
       </section>
@@ -213,7 +252,9 @@ export default function Landing() {
           <h2 className="font-display text-4xl md:text-6xl mb-6">
             T'ES PRÊT À <span className="text-[#9AB8FF]">PROGRESSER</span> ?
           </h2>
-          <p className="text-gray-400 mb-10 text-lg">Rejoins RIDE’UP. Coaching personnel. Résultats mesurables.</p>
+          <p className="text-gray-400 mb-10 text-lg">
+            Rejoins RIDE&apos;UP : coaching kitesurf en ligne, analyse vidéo et progression mesurable.
+          </p>
           <button
             data-testid="bottom-cta"
             onClick={handleStart}
@@ -223,6 +264,6 @@ export default function Landing() {
           </button>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

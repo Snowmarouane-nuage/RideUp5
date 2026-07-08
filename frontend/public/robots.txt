@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /login
+Disallow: /payment-success
+
+Sitemap: https://rideup.app/sitemap.xml
