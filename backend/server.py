@@ -505,6 +505,54 @@ async def _clear_subscription(user_id: str):
 # ============================================================
 # STRIPE Subscriptions (direct)
 # ============================================================
+@api.get("/billing/stripe-health")
+async def stripe_health():
+    """Public Stripe config check — never exposes secret keys."""
+    import asyncio
+    import billing
+
+    key = (os.environ.get("STRIPE_API_KEY") or "").strip()
+    configured = billing.stripe_configured()
+    mode = None
+    if key.startswith(("sk_test_", "rk_test_")):
+        mode = "test"
+    elif key.startswith(("sk_live_", "rk_live_")):
+        mode = "live"
+    elif key.startswith(("pk_test_", "pk_live_")):
+        mode = "publishable_key_wrong_type"
+
+    if not configured:
+        detail = "STRIPE_API_KEY missing, placeholder, or invalid format (need sk_test_... on Railway)."
+        if mode == "publishable_key_wrong_type":
+            detail = "Wrong key type: use Secret key sk_test_..., not Publishable key pk_test_..."
+        return {
+            "configured": False,
+            "mode": mode,
+            "ok": False,
+            "webhook_secret_set": bool(os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()),
+            "detail": detail,
+        }
+
+    try:
+        acct = await asyncio.to_thread(stripe.Account.retrieve)
+        return {
+            "configured": True,
+            "mode": mode,
+            "ok": True,
+            "webhook_secret_set": bool(os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()),
+            "charges_enabled": bool(acct.get("charges_enabled")),
+            "details_submitted": bool(acct.get("details_submitted")),
+        }
+    except StripeError as e:
+        return {
+            "configured": True,
+            "mode": mode,
+            "ok": False,
+            "webhook_secret_set": bool(os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()),
+            "detail": e.user_message or str(e),
+        }
+
+
 @api.post("/checkout/session")
 async def create_checkout_session(req: CheckoutRequest, request: Request, user: dict = Depends(require_verified_email)):
     if req.plan not in PLANS:
