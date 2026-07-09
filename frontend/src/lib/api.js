@@ -1,6 +1,22 @@
 import axios from "axios";
 
-export const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+function resolveBackendUrl() {
+  const configured = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
+
+  if (typeof window === "undefined") {
+    return configured;
+  }
+
+  const { origin, hostname } = window.location;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return configured || "http://localhost:8000";
+  }
+
+  // Production: same-origin /api via Vercel rewrite (cookies + auth).
+  return origin;
+}
+
+export const BACKEND_URL = resolveBackendUrl();
 
 if (!BACKEND_URL && process.env.NODE_ENV !== "production") {
   console.error(
