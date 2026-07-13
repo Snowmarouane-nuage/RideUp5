@@ -61,7 +61,7 @@ chainlit.md
 # Deployment
 .vercel
 
-backend/data/
+backend/data/*
 !backend/data/*.json
 backend/data/*.kmz
 backend/data/*.kml

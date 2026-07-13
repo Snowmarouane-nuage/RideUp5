@@ -15,7 +15,7 @@ import httpx
 
 logger = logging.getLogger("ridemind")
 
-MICRO_BASE = "http://micro.windguru.cz/"
+MICRO_BASE = "https://micro.windguru.cz/"
 DEFAULT_MODEL = "gfs"
 CACHE_TTL_SEC = 3600
 _SPOTS_PATH = Path(__file__).resolve().parent / "data" / "windguru_spots.json"
@@ -25,9 +25,9 @@ _weekend_cache: Dict[str, tuple[float, dict]] = {}
 _spots_cache: Optional[List[dict]] = None
 _countries_cache: Optional[List[dict]] = None
 
-FORECAST_HTTP_TIMEOUT = 3.0
-BATCH_CONCURRENT = 35
-BATCH_OVERALL_TIMEOUT = 12.0
+FORECAST_HTTP_TIMEOUT = 5.0
+BATCH_CONCURRENT = 25
+BATCH_OVERALL_TIMEOUT = 28.0
 PUBLIC_SPOT_KEYS = frozenset({"windguru_url", "forecast_source", "forecast_model", "wg_id"})
 _WEEKEND_DISK_PATH = Path(__file__).resolve().parent / "data" / "weekend_cache.json"
 _COUNTRIES_PATH = Path(__file__).resolve().parent / "data" / "countries.json"

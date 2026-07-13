@@ -14,7 +14,7 @@ from PIL import Image
 
 logger = logging.getLogger("ridemind")
 
-MAX_FRAMES = int(os.environ.get("VIDEO_ANALYSIS_MAX_FRAMES", "96"))
+MAX_FRAMES = int(os.environ.get("VIDEO_ANALYSIS_MAX_FRAMES", "48"))
 MAX_EDGE_PX = int(os.environ.get("VIDEO_ANALYSIS_MAX_EDGE_PX", "1280"))
 JPEG_QUALITY = int(os.environ.get("VIDEO_ANALYSIS_JPEG_QUALITY", "88"))
 MAX_DURATION_SECONDS = 20
@@ -278,7 +278,7 @@ def extract_video_frames(path: Path, max_frames: int | None = None) -> List[dict
     Returns chronologically ordered frames with phase metadata.
     """
     budget = max_frames if max_frames is not None else MAX_FRAMES
-    budget = max(96, min(budget, 150))  # enforce sensible range
+    budget = max(24, min(budget, 96))
 
     scan_idx, _, scores, fps, total = _motion_profile(path)
     if total <= 0:

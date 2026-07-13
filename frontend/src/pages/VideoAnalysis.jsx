@@ -35,6 +35,7 @@ export default function VideoAnalysis() {
   const [file, setFile] = useState(null);
   const [videoDuration, setVideoDuration] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(null);
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
@@ -59,6 +60,7 @@ export default function VideoAnalysis() {
       return;
     }
     setLoading(true);
+    setUploadPct(null);
     setResult(null);
     try {
       const fd = new FormData();
@@ -70,6 +72,12 @@ export default function VideoAnalysis() {
       if (file) fd.append("video", file);
       const r = await api.post("/video-analysis", fd, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: 320000,
+        onUploadProgress: (evt) => {
+          if (evt.total) {
+            setUploadPct(Math.round((evt.loaded * 100) / evt.total));
+          }
+        },
       });
       setResult(r.data);
       const h = await api.get("/video-analysis/history");
@@ -78,6 +86,7 @@ export default function VideoAnalysis() {
       setError(err.response?.data?.detail || "Erreur lors de l'analyse");
     } finally {
       setLoading(false);
+      setUploadPct(null);
     }
   };
 
@@ -88,7 +97,7 @@ export default function VideoAnalysis() {
         <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-2">COACHING IA</div>
         <h1 className="font-display text-4xl md:text-6xl mb-3">ANALYSE <span className="text-[#9AB8FF]">VIDÉO KITESURF</span></h1>
         <p className="text-gray-400 mb-10 max-w-2xl">
-          Analyse expert sur <span className="text-white">96+ images</span> par clip, concentrées autour du décollage et de la réception.
+          Analyse expert sur <span className="text-white">48+ images</span> par clip, concentrées autour du décollage et de la réception.
           Modèle vision <span className="text-white">GPT-4.1</span> (fallback GPT-4o). Aucune supposition.
         </p>
 
@@ -217,7 +226,11 @@ export default function VideoAnalysis() {
               <div className="p-12 border border-[#262626] bg-[#0A0A0A] text-center">
                 <div className="h-12 w-12 mx-auto rounded-full border-4 border-[#9AB8FF] border-t-transparent animate-spin mb-4" />
                 <div className="text-gray-300 font-display tracking-wider">L&apos;AGENT RIDE’UP ANALYSE TA SESSION...</div>
-                <div className="text-gray-500 text-xs mt-2">Quelques secondes</div>
+                <div className="text-gray-400 text-sm mt-2">
+                  {uploadPct !== null && uploadPct < 100
+                    ? `Envoi de la vidéo… ${uploadPct}%`
+                    : "Extraction des images et analyse IA — compte 1 à 2 minutes"}
+                </div>
               </div>
             )}
             {result && (

@@ -13,7 +13,7 @@ logger = logging.getLogger("ridemind")
 DEFAULT_VISION_MODEL = os.environ.get("VIDEO_ANALYSIS_GPT_MODEL") or "gpt-4.1"
 FALLBACK_VISION_MODEL = os.environ.get("VIDEO_ANALYSIS_GPT_MODEL_FALLBACK", "gpt-4o")
 MAX_TOKENS = int(os.environ.get("VIDEO_ANALYSIS_MAX_TOKENS", "6000"))
-FRAME_IMAGE_DETAIL = "high"  # always high for trick analysis
+FRAME_IMAGE_DETAIL = os.environ.get("VIDEO_ANALYSIS_IMAGE_DETAIL", "auto")
 API_TIMEOUT_SEC = float(os.environ.get("VIDEO_ANALYSIS_API_TIMEOUT", "300"))
 _PLACEHOLDER_MARKERS = ("replace_me", "sk-replace", "your_key", "xxx", "...")
 

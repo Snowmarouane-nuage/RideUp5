@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import DangerBadge from "@/components/DangerBadge";
 
 const HERO_BG = "https://images.unsplash.com/photo-1627068477565-3a66d5f76d5e?fm=jpg&q=85&w=2000&auto=format&fit=crop";
-const FORECAST_TIMEOUT_MS = 20000;
+const FORECAST_TIMEOUT_MS = 60000;
 
 export default function WeekendSpots() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -39,9 +39,6 @@ export default function WeekendSpots() {
       .then((r) => {
         if (seq !== fetchSeq.current) return;
         const forecast = r.data.forecast;
-        const responseCountry = forecast.country ?? null;
-        const expected = country || null;
-        if (responseCountry !== expected) return;
         setCountries(r.data.countries || []);
         setData(forecast);
       })

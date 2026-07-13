@@ -90,7 +90,7 @@ export default function SpotRecommender() {
         payload.user_lon = location.lon;
         payload.max_distance_km = maxDistance;
       }
-      const r = await api.post("/spot-recommend", payload);
+      const r = await api.post("/spot-recommend", payload, { timeout: 90000 });
       setResult(r.data);
     } catch (err) {
       setError(err.response?.data?.detail || "Erreur");

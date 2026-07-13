@@ -29,7 +29,7 @@ export function FeatureGate({ title, description, requirePremium = false, childr
     );
   }
 
-  if (!user.plan) {
+  if (!user.plan && !user.is_admin) {
     return (
       <GateShell
         icon={<Lock className="h-16 w-16 text-[#9AB8FF] mx-auto mb-6" />}
@@ -44,7 +44,7 @@ export function FeatureGate({ title, description, requirePremium = false, childr
     );
   }
 
-  if (requirePremium && user.plan !== "premium") {
+  if (requirePremium && user.plan !== "premium" && !user.is_admin) {
     return (
       <GateShell
         icon={<Lock className="h-16 w-16 text-[#9AB8FF] mx-auto mb-6" />}

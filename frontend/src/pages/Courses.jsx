@@ -21,7 +21,7 @@ export default function Courses() {
       .catch(() => setApiError(true));
   }, []);
 
-  const locked = !user?.plan;
+  const locked = !user?.plan && !user?.is_admin;
   const filtered = filter === "all" ? courses : courses.filter((c) => c.sport === filter);
 
   return (

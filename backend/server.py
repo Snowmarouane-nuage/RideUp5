@@ -60,6 +60,8 @@ def public_user(user: dict) -> dict:
     out["email_verified"] = user_email_verified(user)
     if user_is_admin(user):
         out["is_admin"] = True
+        if not out.get("plan"):
+            out["plan"] = "premium"
     return out
 
 
@@ -235,6 +237,11 @@ class VerifyEmailRequest(BaseModel):
 
 
 async def require_active_plan(request: Request) -> dict:
+    user = await require_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if user_is_admin(user):
+        return user
     user = await require_verified_email(request)
     if not user_has_active_plan(user):
         raise HTTPException(status_code=402, detail="Subscription required")
@@ -242,7 +249,14 @@ async def require_active_plan(request: Request) -> dict:
 
 
 async def require_premium_plan(request: Request) -> dict:
-    user = await require_active_plan(request)
+    user = await require_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if user_is_admin(user):
+        return user
+    user = await require_verified_email(request)
+    if not user_has_active_plan(user):
+        raise HTTPException(status_code=402, detail="Subscription required")
     if user.get("plan") != "premium":
         raise HTTPException(status_code=403, detail="Premium plan required")
     return user
@@ -882,10 +896,11 @@ async def video_analysis(
     with open(path, "wb") as f:
         f.write(content)
 
+    import asyncio
     from video_frames import extract_video_frames, get_video_duration_seconds
     from gpt_vision import analyze_session_video, get_active_vision_model, parse_structured_json
 
-    duration_sec = get_video_duration_seconds(path)
+    duration_sec = await asyncio.to_thread(get_video_duration_seconds, path)
     if duration_sec > VIDEO_ANALYSIS_MAX_SECONDS:
         path.unlink(missing_ok=True)
         raise HTTPException(
@@ -897,7 +912,7 @@ async def video_analysis(
         )
 
     try:
-        frame_list = extract_video_frames(path)
+        frame_list = await asyncio.to_thread(extract_video_frames, path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
