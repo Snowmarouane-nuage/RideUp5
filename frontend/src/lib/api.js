@@ -70,9 +70,9 @@ export function formatApiError(err) {
       + "Si l'upload était terminé, vérifie l'historique — l'analyse continue peut-être en arrière-plan."
     );
   }
-  if (err.message === "Network Error") {
+  if (err.message === "Network Error" || err.code === "ERR_NETWORK") {
     return (
-      "Connexion interrompue. Vérifie ta connexion et réessaie. "
+      "Connexion interrompue pendant l'envoi. Réessaie dans quelques secondes. "
       + "Ce n'est pas lié à la durée de ta vidéo."
     );
   }
@@ -83,6 +83,64 @@ export function formatApiError(err) {
     return "Abonnement requis pour l'analyse vidéo. Vérifie ton plan ou ADMIN_EMAILS sur Railway.";
   }
   return err.message || "Erreur lors de l'analyse";
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        resolve(result.split(",")[1] || "");
+      } else {
+        reject(new Error("Lecture du fichier impossible"));
+      }
+    };
+    reader.onerror = () => reject(reader.error || new Error("Lecture du fichier impossible"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Upload video in small same-origin chunks (reliable through Vercel proxy). */
+export async function uploadVideoChunked(file, fields, { onProgress } = {}) {
+  const CHUNK_BYTES = 750_000;
+  const uploadId =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID().replace(/-/g, "")
+      : `up${Date.now()}${Math.random().toString(16).slice(2)}`;
+
+  const total = Math.max(1, Math.ceil(file.size / CHUNK_BYTES));
+  for (let i = 0; i < total; i++) {
+    const start = i * CHUNK_BYTES;
+    const slice = file.slice(start, Math.min(start + CHUNK_BYTES, file.size));
+    const data = await blobToBase64(slice);
+    await api.post(
+      "/video-analysis/chunk",
+      {
+        upload_id: uploadId,
+        chunk_index: i,
+        chunk_total: total,
+        data,
+      },
+      { timeout: 120000 },
+    );
+    if (onProgress) onProgress(Math.round(((i + 1) / total) * 100));
+  }
+
+  const complete = await api.post(
+    "/video-analysis/complete",
+    {
+      upload_id: uploadId,
+      filename: file.name || "video.mp4",
+      sport: fields.sport,
+      level: fields.level,
+      trick: fields.trick || "",
+      problem: fields.problem || "",
+      conditions: fields.conditions || "",
+    },
+    { timeout: 120000 },
+  );
+  return complete.data;
 }
 
 const JOB_PROGRESS_LABELS = {

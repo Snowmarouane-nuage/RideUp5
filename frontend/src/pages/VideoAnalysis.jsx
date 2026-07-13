@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api, fetchUploadConfig, createDirectApiClient, formatApiError, pollAnalysisJob, jobProgressLabel } from "@/lib/api";
+import { api, fetchUploadConfig, formatApiError, pollAnalysisJob, jobProgressLabel, uploadVideoChunked } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
 import { Upload, Sparkles, Target, Dumbbell, ShieldCheck, Award, ListChecks, Wind } from "lucide-react";
@@ -76,40 +76,34 @@ export default function VideoAnalysis() {
         return;
       }
 
-      const direct = createDirectApiClient(uploadConfig);
-
-      const fd = new FormData();
-      fd.append("sport", sport);
-      fd.append("level", level);
-      fd.append("trick", trick.trim());
-      fd.append("problem", problem.trim());
-      fd.append("conditions", conditions.trim());
-      fd.append("video", file);
-
       setPhase("upload");
-      const uploadRes = await direct.post("/video-analysis", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-        timeout: 180000,
-        onUploadProgress: (evt) => {
-          if (evt.total) {
-            const pct = Math.round((evt.loaded * 100) / evt.total);
-            setUploadPct(pct);
-          }
+      const uploadRes = await uploadVideoChunked(
+        file,
+        {
+          sport,
+          level,
+          trick: trick.trim(),
+          problem: problem.trim(),
+          conditions: conditions.trim(),
         },
-      });
+        {
+          onProgress: (pct) => setUploadPct(pct),
+        },
+      );
 
-      const jobId = uploadRes.data?.job_id;
+      const jobId = uploadRes?.job_id;
       if (!jobId) {
-        setResult(uploadRes.data);
-      } else {
-        setUploadPct(100);
-        setPhase("analyze");
-        setProgressLabel(jobProgressLabel("uploaded"));
-        const analysisResult = await pollAnalysisJob(direct, jobId, {
-          onProgress: (p) => setProgressLabel(jobProgressLabel(p)),
-        });
-        setResult(analysisResult);
+        setError("Le serveur n'a pas renvoyé d'identifiant d'analyse. Réessaie.");
+        return;
       }
+
+      setUploadPct(100);
+      setPhase("analyze");
+      setProgressLabel(jobProgressLabel("uploaded"));
+      const analysisResult = await pollAnalysisJob(api, jobId, {
+        onProgress: (p) => setProgressLabel(jobProgressLabel(p)),
+      });
+      setResult(analysisResult);
       const h = await api.get("/video-analysis/history");
       setHistory(h.data);
     } catch (err) {

@@ -11,6 +11,9 @@ import secrets
 import httpx
 import bcrypt
 import stripe
+import base64
+import shutil
+import json
 from stripe import StripeError
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
@@ -821,6 +824,8 @@ async def list_courses():
 # ============================================================
 VIDEO_ANALYSIS_MAX_MB = 100
 VIDEO_ANALYSIS_MAX_SECONDS = 20
+CHUNK_UPLOAD_DIR = UPLOAD_DIR / "chunks"
+CHUNK_UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Pending uploads (upload_id -> path) — cleaned after analyze or after 2h
 _pending_uploads: dict[str, dict] = {}
@@ -917,6 +922,62 @@ class VideoAnalyzeRequest(BaseModel):
     trick: str = ""
     problem: str = ""
     conditions: str = ""
+
+
+class VideoChunkRequest(BaseModel):
+    upload_id: str = Field(min_length=8, max_length=64)
+    chunk_index: int = Field(ge=0)
+    chunk_total: int = Field(ge=1, le=500)
+    data: str = Field(min_length=1)
+
+
+class VideoCompleteRequest(BaseModel):
+    upload_id: str = Field(min_length=8, max_length=64)
+    filename: str = Field(min_length=1, max_length=200)
+    sport: str
+    level: str
+    description: str = ""
+    trick: str = ""
+    problem: str = ""
+    conditions: str = ""
+
+
+async def _enqueue_analysis_job(
+    user: dict,
+    path: Path,
+    *,
+    sport_key: str,
+    level: str,
+    trick_text: str,
+    problem_text: str,
+    conditions_text: str,
+    description_saved: str,
+    duration_sec: float,
+) -> str:
+    job_id = f"job_{uuid.uuid4().hex[:16]}"
+    now = datetime.now(timezone.utc).isoformat()
+    await db.video_analysis_jobs.insert_one({
+        "job_id": job_id,
+        "user_id": user["user_id"],
+        "status": "queued",
+        "progress": "uploaded",
+        "path": str(path),
+        "video_filename": path.name,
+        "sport_key": sport_key,
+        "level": level,
+        "trick_text": trick_text,
+        "problem_text": problem_text,
+        "conditions_text": conditions_text,
+        "description_saved": description_saved,
+        "duration_sec": duration_sec,
+        "error": None,
+        "result": None,
+        "created_at": now,
+        "updated_at": now,
+    })
+    import asyncio
+    asyncio.create_task(_execute_analysis_job(job_id))
+    return job_id
 
 
 async def _run_video_analysis_for_user(
@@ -1227,30 +1288,129 @@ async def video_analysis(
     path, upload_id, duration_sec = await _save_video_upload(video)
     _pending_uploads.pop(upload_id, None)
 
-    job_id = f"job_{uuid.uuid4().hex[:16]}"
-    now = datetime.now(timezone.utc).isoformat()
-    await db.video_analysis_jobs.insert_one({
-        "job_id": job_id,
-        "user_id": user["user_id"],
-        "status": "queued",
-        "progress": "uploaded",
-        "path": str(path),
-        "video_filename": path.name,
-        "sport_key": sport_key,
-        "level": level,
-        "trick_text": trick_text,
-        "problem_text": problem_text,
-        "conditions_text": conditions_text,
-        "description_saved": description_saved,
-        "duration_sec": duration_sec,
-        "error": None,
-        "result": None,
-        "created_at": now,
-        "updated_at": now,
-    })
+    job_id = await _enqueue_analysis_job(
+        user,
+        path,
+        sport_key=sport_key,
+        level=level,
+        trick_text=trick_text,
+        problem_text=problem_text,
+        conditions_text=conditions_text,
+        description_saved=description_saved,
+        duration_sec=duration_sec,
+    )
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "job_id": job_id,
+            "status": "queued",
+            "duration_sec": duration_sec,
+            "message": "Analyse lancée — suis la progression via le job_id.",
+        },
+    )
+
+
+@api.post("/video-analysis/chunk")
+async def video_analysis_chunk(payload: VideoChunkRequest, request: Request):
+    """Receive one base64 chunk (same-origin, avoids Vercel/CORS upload limits)."""
+    user = await require_active_plan(request)
+    try:
+        raw = base64.b64decode(payload.data, validate=True)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Chunk vidéo invalide")
+    if len(raw) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Chunk trop volumineux (max 2 Mo)")
+
+    chunk_dir = CHUNK_UPLOAD_DIR / payload.upload_id
+    chunk_dir.mkdir(parents=True, exist_ok=True)
+    meta_path = chunk_dir / "meta.json"
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        if meta.get("user_id") != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Upload non autorisé")
+        if meta.get("chunk_total") != payload.chunk_total:
+            raise HTTPException(status_code=400, detail="Nombre de chunks incohérent")
+    else:
+        meta_path.write_text(
+            json.dumps({"user_id": user["user_id"], "chunk_total": payload.chunk_total}),
+            encoding="utf-8",
+        )
+
+    (chunk_dir / f"{payload.chunk_index:05d}").write_bytes(raw)
+    return {"ok": True, "chunk_index": payload.chunk_index, "chunk_total": payload.chunk_total}
+
+
+@api.post("/video-analysis/complete")
+async def video_analysis_complete(payload: VideoCompleteRequest, request: Request):
+    """Assemble chunked upload and queue background analysis."""
+    user = await require_active_plan(request)
+    chunk_dir = CHUNK_UPLOAD_DIR / payload.upload_id
+    meta_path = chunk_dir / "meta.json"
+    if not meta_path.exists():
+        raise HTTPException(status_code=404, detail="Upload introuvable — renvoie la vidéo")
+
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    if meta.get("user_id") != user["user_id"]:
+        raise HTTPException(status_code=403, detail="Upload non autorisé")
+
+    parts = sorted(p for p in chunk_dir.iterdir() if p.name.isdigit())
+    expected = int(meta.get("chunk_total") or 0)
+    if len(parts) != expected:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Chunks manquants ({len(parts)}/{expected}). Réessaie l'envoi.",
+        )
+
+    ext = (payload.filename or "video.mp4").split(".")[-1][:5]
+    path = UPLOAD_DIR / f"{payload.upload_id}.{ext}"
+    with open(path, "wb") as out:
+        for part in parts:
+            out.write(part.read_bytes())
+    shutil.rmtree(chunk_dir, ignore_errors=True)
 
     import asyncio
-    asyncio.create_task(_execute_analysis_job(job_id))
+    from video_frames import get_video_duration_seconds
+
+    video_size = path.stat().st_size
+    if video_size > VIDEO_ANALYSIS_MAX_MB * 1024 * 1024:
+        path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail=f"Vidéo trop lourde (max {VIDEO_ANALYSIS_MAX_MB} MB)")
+    if video_size == 0:
+        path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="Fichier vidéo vide")
+
+    duration_sec = await asyncio.to_thread(get_video_duration_seconds, path)
+    if duration_sec > VIDEO_ANALYSIS_MAX_SECONDS:
+        path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Vidéo trop longue ({duration_sec:.1f}s). "
+                f"Maximum {VIDEO_ANALYSIS_MAX_SECONDS} secondes pour l'analyse."
+            ),
+        )
+
+    sport_key, trick_text, problem_text, conditions_text, description_saved, level = _video_form_metadata(
+        payload.sport,
+        payload.level,
+        payload.description,
+        payload.trick,
+        payload.problem,
+        payload.conditions,
+    )
+
+    job_id = await _enqueue_analysis_job(
+        user,
+        path,
+        sport_key=sport_key,
+        level=level,
+        trick_text=trick_text,
+        problem_text=problem_text,
+        conditions_text=conditions_text,
+        description_saved=description_saved,
+        duration_sec=duration_sec,
+    )
 
     return JSONResponse(
         status_code=202,
