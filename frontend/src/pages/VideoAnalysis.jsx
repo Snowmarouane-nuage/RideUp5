@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api, fetchUploadConfig, createDirectApiClient, formatApiError } from "@/lib/api";
+import { api, fetchUploadConfig, createDirectApiClient, formatApiError, pollAnalysisJob, jobProgressLabel } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
 import { Upload, Sparkles, Target, Dumbbell, ShieldCheck, Award, ListChecks, Wind } from "lucide-react";
@@ -37,6 +37,7 @@ export default function VideoAnalysis() {
   const [loading, setLoading] = useState(false);
   const [uploadPct, setUploadPct] = useState(null);
   const [phase, setPhase] = useState(null); // "upload" | "analyze"
+  const [progressLabel, setProgressLabel] = useState("");
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
@@ -63,6 +64,7 @@ export default function VideoAnalysis() {
     setLoading(true);
     setUploadPct(null);
     setPhase(null);
+    setProgressLabel("");
     setResult(null);
     try {
       const uploadConfig = await fetchUploadConfig();
@@ -85,18 +87,29 @@ export default function VideoAnalysis() {
       fd.append("video", file);
 
       setPhase("upload");
-      const r = await direct.post("/video-analysis", fd, {
+      const uploadRes = await direct.post("/video-analysis", fd, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 600000,
+        timeout: 180000,
         onUploadProgress: (evt) => {
           if (evt.total) {
             const pct = Math.round((evt.loaded * 100) / evt.total);
             setUploadPct(pct);
-            if (pct >= 100) setPhase("analyze");
           }
         },
       });
-      setResult(r.data);
+
+      const jobId = uploadRes.data?.job_id;
+      if (!jobId) {
+        setResult(uploadRes.data);
+      } else {
+        setUploadPct(100);
+        setPhase("analyze");
+        setProgressLabel(jobProgressLabel("uploaded"));
+        const analysisResult = await pollAnalysisJob(direct, jobId, {
+          onProgress: (p) => setProgressLabel(jobProgressLabel(p)),
+        });
+        setResult(analysisResult);
+      }
       const h = await api.get("/video-analysis/history");
       setHistory(h.data);
     } catch (err) {
@@ -105,6 +118,7 @@ export default function VideoAnalysis() {
       setLoading(false);
       setUploadPct(null);
       setPhase(null);
+      setProgressLabel("");
     }
   };
 
@@ -247,9 +261,7 @@ export default function VideoAnalysis() {
                 <div className="text-gray-400 text-sm mt-2">
                   {phase === "upload" && uploadPct !== null
                     ? `Envoi de la vidéo… ${uploadPct}%`
-                    : phase === "analyze"
-                      ? "Extraction de 96 images et analyse IA en 2 passes parallèles — compte 1 à 3 minutes"
-                      : "Préparation…"}
+                    : progressLabel || "Analyse en cours…"}
                 </div>
               </div>
             )}

@@ -65,12 +65,15 @@ export function formatApiError(err) {
     return typeof detail === "string" ? detail : JSON.stringify(detail);
   }
   if (err.code === "ECONNABORTED") {
-    return "L'analyse a pris trop de temps. Réessaie avec un clip plus court (max 20 s).";
+    return (
+      "La connexion a expiré pendant l'envoi. "
+      + "Si l'upload était terminé, vérifie l'historique — l'analyse continue peut-être en arrière-plan."
+    );
   }
   if (err.message === "Network Error") {
     return (
       "Connexion interrompue. Vérifie ta connexion et réessaie. "
-      + "Si le problème persiste, utilise un clip plus court (< 20 s, < 30 Mo)."
+      + "Ce n'est pas lié à la durée de ta vidéo."
     );
   }
   if (err.response?.status === 401) {
@@ -80,6 +83,35 @@ export function formatApiError(err) {
     return "Abonnement requis pour l'analyse vidéo. Vérifie ton plan ou ADMIN_EMAILS sur Railway.";
   }
   return err.message || "Erreur lors de l'analyse";
+}
+
+const JOB_PROGRESS_LABELS = {
+  uploaded: "Vidéo reçue — préparation de l'analyse…",
+  extracting_frames: "Extraction des 96 images de ton clip…",
+  analyzing: "Analyse IA en cours (1 à 3 minutes) — ne ferme pas la page",
+  saving: "Finalisation du rapport…",
+  done: "Terminé",
+};
+
+export function jobProgressLabel(progress) {
+  return JOB_PROGRESS_LABELS[progress] || "Analyse en cours…";
+}
+
+/** Poll a background analysis job until completed or failed. */
+export async function pollAnalysisJob(directClient, jobId, { onProgress, intervalMs = 3000, maxAttempts = 200 } = {}) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const r = await directClient.get(`/video-analysis/jobs/${jobId}`, { timeout: 45000 });
+    const { status, progress, error, result } = r.data;
+    if (progress && onProgress) onProgress(progress);
+    if (status === "completed" && result) return result;
+    if (status === "failed") {
+      throw Object.assign(new Error(error || "Analyse échouée"), { response: { data: { detail: error } } });
+    }
+    await new Promise((res) => setTimeout(res, intervalMs));
+  }
+  throw new Error(
+    "L'analyse prend plus de temps que prévu. Recharge la page et consulte l'historique dans quelques minutes.",
+  );
 }
 
 export const LOGO_URL = "/logo.png";

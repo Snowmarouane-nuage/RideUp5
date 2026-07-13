@@ -931,6 +931,7 @@ async def _run_video_analysis_for_user(
     conditions_text: str,
     description_saved: str,
     duration_sec: float,
+    job_id: Optional[str] = None,
 ):
     import asyncio
     from video_frames import extract_video_frames
@@ -941,6 +942,9 @@ async def _run_video_analysis_for_user(
         kitesurf_trick_label,
         video_analysis_system_prompt,
     )
+
+    if job_id:
+        await _update_analysis_job(job_id, progress="extracting_frames")
 
     try:
         frame_list = await asyncio.to_thread(extract_video_frames, path)
@@ -961,6 +965,9 @@ async def _run_video_analysis_for_user(
         frame_count=len(frame_list),
         frame_times=frame_times,
     )
+
+    if job_id:
+        await _update_analysis_job(job_id, progress="analyzing")
 
     try:
         ai_response = await analyze_session_video(
@@ -1025,6 +1032,9 @@ async def _run_video_analysis_for_user(
         )
     structured.pop("video_valide", None)
     structured.pop("raison_rejet", None)
+
+    if job_id:
+        await _update_analysis_job(job_id, progress="saving")
 
     record = {
         "analysis_id": f"an_{uuid.uuid4().hex[:12]}",
@@ -1098,6 +1108,56 @@ def _video_form_metadata(
     return sport_key, trick_text, problem_text, conditions_text, description_saved, level
 
 
+async def _update_analysis_job(job_id: str, **fields) -> None:
+    fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.video_analysis_jobs.update_one({"job_id": job_id}, {"$set": fields})
+
+
+async def _execute_analysis_job(job_id: str) -> None:
+    job = await db.video_analysis_jobs.find_one({"job_id": job_id})
+    if not job:
+        return
+
+    path = Path(job["path"])
+    user = {"user_id": job["user_id"]}
+
+    try:
+        await _update_analysis_job(job_id, status="processing", progress="extracting_frames")
+        result = await _run_video_analysis_for_user(
+            user,
+            path,
+            job["video_filename"],
+            sport_key=job["sport_key"],
+            level=job["level"],
+            trick_text=job.get("trick_text", ""),
+            problem_text=job.get("problem_text", ""),
+            conditions_text=job.get("conditions_text", ""),
+            description_saved=job.get("description_saved", ""),
+            duration_sec=float(job.get("duration_sec") or 0),
+            job_id=job_id,
+        )
+        await _update_analysis_job(
+            job_id,
+            status="completed",
+            progress="done",
+            result=result,
+            error=None,
+        )
+    except HTTPException as exc:
+        detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+        logger.exception("Analysis job %s failed (HTTP)", job_id)
+        await _update_analysis_job(job_id, status="failed", progress="done", error=detail)
+    except Exception as exc:
+        logger.exception("Analysis job %s failed", job_id)
+        await _update_analysis_job(job_id, status="failed", progress="done", error=str(exc))
+    finally:
+        path.unlink(missing_ok=True)
+        await db.video_analysis_jobs.update_one(
+            {"job_id": job_id},
+            {"$set": {"path": None, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+
+
 @api.post("/video-analysis/upload")
 async def video_analysis_upload(request: Request, video: UploadFile = File(...)):
     """Upload video only — prefer single-shot /video-analysis on direct Railway URL."""
@@ -1159,28 +1219,64 @@ async def video_analysis(
     conditions: str = Form(""),
     video: UploadFile = File(...),
 ):
-    """Legacy single-shot upload+analyze (local dev). Production uses upload + analyze."""
+    """Accept video upload, queue background analysis, return job_id for polling."""
     user = await require_active_plan(request)
     sport_key, trick_text, problem_text, conditions_text, description_saved, level = _video_form_metadata(
         sport, level, description, trick, problem, conditions,
     )
     path, upload_id, duration_sec = await _save_video_upload(video)
     _pending_uploads.pop(upload_id, None)
-    try:
-        return await _run_video_analysis_for_user(
-            user,
-            path,
-            path.name,
-            sport_key=sport_key,
-            level=level,
-            trick_text=trick_text,
-            problem_text=problem_text,
-            conditions_text=conditions_text,
-            description_saved=description_saved,
-            duration_sec=duration_sec,
-        )
-    finally:
-        path.unlink(missing_ok=True)
+
+    job_id = f"job_{uuid.uuid4().hex[:16]}"
+    now = datetime.now(timezone.utc).isoformat()
+    await db.video_analysis_jobs.insert_one({
+        "job_id": job_id,
+        "user_id": user["user_id"],
+        "status": "queued",
+        "progress": "uploaded",
+        "path": str(path),
+        "video_filename": path.name,
+        "sport_key": sport_key,
+        "level": level,
+        "trick_text": trick_text,
+        "problem_text": problem_text,
+        "conditions_text": conditions_text,
+        "description_saved": description_saved,
+        "duration_sec": duration_sec,
+        "error": None,
+        "result": None,
+        "created_at": now,
+        "updated_at": now,
+    })
+
+    import asyncio
+    asyncio.create_task(_execute_analysis_job(job_id))
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "job_id": job_id,
+            "status": "queued",
+            "duration_sec": duration_sec,
+            "message": "Analyse lancée — suis la progression via le job_id.",
+        },
+    )
+
+
+@api.get("/video-analysis/jobs/{job_id}")
+async def get_video_analysis_job(job_id: str, request: Request):
+    user = await require_user(request)
+    job = await db.video_analysis_jobs.find_one({"job_id": job_id}, {"_id": 0})
+    if not job or job.get("user_id") != user["user_id"]:
+        raise HTTPException(status_code=404, detail="Analyse introuvable")
+    return {
+        "job_id": job_id,
+        "status": job.get("status", "queued"),
+        "progress": job.get("progress"),
+        "error": job.get("error"),
+        "result": job.get("result"),
+        "duration_sec": job.get("duration_sec"),
+    }
 
 
 @api.get("/video-analysis/history")

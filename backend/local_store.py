@@ -140,6 +140,7 @@ class LocalDatabase:
         "email_verification_tokens",
         "payment_transactions",
         "video_analyses",
+        "video_analysis_jobs",
         "coach_profiles",
     )
 
