@@ -15,6 +15,10 @@ stripe.api_key = os.environ.get("STRIPE_API_KEY", "")
 
 logger = logging.getLogger("ridemind")
 
+
+def refresh_stripe_api_key() -> None:
+    stripe.api_key = (os.environ.get("STRIPE_API_KEY") or "").strip()
+
 PLAN_PRICES = {
     "standard": {"amount_cents": 999, "name": "RIDE'UP Standard"},
     "premium": {"amount_cents": 1599, "name": "RIDE'UP Premium"},
@@ -86,6 +90,7 @@ async def create_subscription_checkout(
     cancel_url: str,
     customer_id: Optional[str] = None,
 ) -> CheckoutResult:
+    refresh_stripe_api_key()
     if not stripe_configured():
         raise ValueError(
             "Stripe n'est pas configuré. Ajoute STRIPE_API_KEY dans backend/.env "
@@ -113,6 +118,7 @@ async def create_subscription_checkout(
 
 
 async def get_checkout_status(session_id: str) -> CheckoutStatusResult:
+    refresh_stripe_api_key()
     def _get():
         return stripe.checkout.Session.retrieve(
             session_id,
@@ -154,6 +160,7 @@ def period_end_iso(timestamp: Optional[int]) -> Optional[str]:
 
 
 async def parse_webhook(body: bytes, signature: str) -> Optional[Dict[str, Any]]:
+    refresh_stripe_api_key()
     secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
     is_prod = os.environ.get("ENV", "development") == "production"
 

@@ -511,6 +511,7 @@ async def stripe_health():
     import asyncio
     import billing
 
+    billing.refresh_stripe_api_key()
     key = (os.environ.get("STRIPE_API_KEY") or "").strip()
     configured = billing.stripe_configured()
     mode = None
@@ -633,12 +634,20 @@ async def create_checkout_session(req: CheckoutRequest, request: Request, user: 
 
 
 @api.get("/checkout/status/{session_id}")
-async def checkout_status(session_id: str, request: Request, user: dict = Depends(require_user)):
+async def checkout_status(session_id: str, request: Request):
     import billing
 
     tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
+
+    user = await get_current_user(request)
+    if user and tx.get("user_id") != user.get("user_id"):
+        raise HTTPException(
+            status_code=403,
+            detail="Cette session de paiement ne correspond pas à ton compte",
+        )
+    owner_id = tx["user_id"]
 
     if session_id.startswith("dev_") or (tx.get("metadata") or {}).get("dev_mode"):
         return {
@@ -657,11 +666,13 @@ async def checkout_status(session_id: str, request: Request, user: dict = Depend
 
     if status.payment_status == "paid" and tx["payment_status"] != "paid":
         await _apply_subscription(
-            user["user_id"],
+            owner_id,
             tx["plan"],
             status.subscription_id or "",
             billing.resolve_stripe_customer_id(status.customer_id)
-            or billing.resolve_stripe_customer_id(user.get("stripe_customer_id"))
+            or billing.resolve_stripe_customer_id(
+                (await db.users.find_one({"user_id": owner_id}, {"_id": 0}) or {}).get("stripe_customer_id")
+            )
             or "",
             status.period_end,
         )

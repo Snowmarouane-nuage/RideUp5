@@ -19,7 +19,7 @@ export default function PaymentSuccess() {
     let attempts = 0;
     const poll = async () => {
       attempts++;
-      if (attempts > 8) { setStatus("timeout"); return; }
+      if (attempts > 15) { setStatus("timeout"); return; }
       try {
         const r = await api.get(`/checkout/status/${sessionId}`);
         if (r.data.payment_status === "paid") {
@@ -29,7 +29,13 @@ export default function PaymentSuccess() {
         }
         if (r.data.status === "expired") { setStatus("expired"); return; }
         setTimeout(poll, 2000);
-      } catch {
+      } catch (err) {
+        const detail = err.response?.data?.detail;
+        if (attempts < 5 && err.response?.status >= 500) {
+          setTimeout(poll, 2000);
+          return;
+        }
+        console.error("checkout status error", err.response?.status, detail);
         setStatus("error");
       }
     };
