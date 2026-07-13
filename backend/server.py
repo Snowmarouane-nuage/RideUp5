@@ -822,69 +822,41 @@ async def list_courses():
 VIDEO_ANALYSIS_MAX_MB = 100
 VIDEO_ANALYSIS_MAX_SECONDS = 20
 
+# Pending uploads (upload_id -> path) — cleaned after analyze or after 2h
+_pending_uploads: dict[str, dict] = {}
 
-@api.post("/video-analysis")
-async def video_analysis(
-    request: Request,
-    sport: str = Form(...),
-    level: str = Form(...),
-    description: str = Form(""),
-    trick: str = Form(""),
-    problem: str = Form(""),
-    conditions: str = Form(""),
-    video: UploadFile = File(...),
-):
-    from video_analysis_prompts import (
-        SUPPORTED_SPORTS,
-        build_rider_context,
-        kitesurf_problem_label,
-        kitesurf_trick_label,
-        video_analysis_system_prompt,
-    )
 
-    sport_key = (sport or "").lower().strip()
-    if sport_key not in SUPPORTED_SPORTS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Sport non supporté. Choisis : {', '.join(SUPPORTED_SPORTS)}.",
-        )
-    user = await require_active_plan(request)
+def _session_token_from_request(request: Request) -> Optional[str]:
+    token = request.cookies.get("session_token")
+    if not token:
+        auth = request.headers.get("Authorization") or ""
+        if auth.startswith("Bearer "):
+            token = auth[7:].strip()
+    return token or None
 
-    trick_text = (trick or "").strip()
-    problem_text = (problem or "").strip()
-    conditions_text = (conditions or "").strip()
-    legacy_desc = (description or "").strip()
 
-    if not trick_text and legacy_desc:
-        trick_text = legacy_desc
-    if not problem_text and legacy_desc and not trick:
-        problem_text = legacy_desc
+@api.get("/auth/upload-config")
+async def auth_upload_config(request: Request):
+    """Return direct API URL + session token for large uploads (bypasses Vercel proxy limits)."""
+    user = await require_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = _session_token_from_request(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Session requise")
+    direct = os.environ.get("PUBLIC_API_URL", "").strip().rstrip("/")
+    if not direct:
+        direct = str(request.base_url).rstrip("/")
+    return {"direct_api_url": direct, "session_token": token}
 
-    if trick_text and problem_text:
-        description_saved = (
-            f"Figure : {trick_text}\nProblème : {problem_text}"
-            + (f"\nContexte : {conditions_text}" if conditions_text else "")
-        )
-    elif trick_text or problem_text:
-        parts = []
-        if trick_text:
-            parts.append(f"Figure : {trick_text}")
-        if problem_text:
-            parts.append(f"Problème : {problem_text}")
-        if conditions_text:
-            parts.append(f"Contexte : {conditions_text}")
-        description_saved = "\n".join(parts)
-    else:
-        description_saved = (
-            "Auto-détection (figure et problème identifiés par l'IA)"
-            + (f"\nContexte : {conditions_text}" if conditions_text else "")
-        )
 
+async def _save_video_upload(video: UploadFile) -> tuple[Path, str, int]:
     if not video.filename:
         raise HTTPException(status_code=400, detail="Vidéo requise pour l'analyse visuelle")
 
     ext = (video.filename or "video.mp4").split(".")[-1][:5]
-    video_filename = f"{uuid.uuid4().hex}.{ext}"
+    upload_id = uuid.uuid4().hex
+    video_filename = f"{upload_id}.{ext}"
     path = UPLOAD_DIR / video_filename
     content = await video.read()
     video_size = len(content)
@@ -897,8 +869,7 @@ async def video_analysis(
         f.write(content)
 
     import asyncio
-    from video_frames import extract_video_frames, get_video_duration_seconds
-    from gpt_vision import analyze_session_video, get_active_vision_model, parse_structured_json
+    from video_frames import get_video_duration_seconds
 
     duration_sec = await asyncio.to_thread(get_video_duration_seconds, path)
     if duration_sec > VIDEO_ANALYSIS_MAX_SECONDS:
@@ -910,6 +881,58 @@ async def video_analysis(
                 f"Maximum {VIDEO_ANALYSIS_MAX_SECONDS} secondes pour l'analyse."
             ),
         )
+
+    _pending_uploads[upload_id] = {
+        "path": path,
+        "filename": video_filename,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    return path, upload_id, int(duration_sec * 10) / 10.0
+
+
+def _resolve_pending_upload(upload_id: str) -> tuple[Path, str]:
+    pending = _pending_uploads.pop(upload_id, None)
+    if pending:
+        return pending["path"], pending["filename"]
+    matches = sorted(UPLOAD_DIR.glob(f"{upload_id}.*"))
+    if not matches:
+        raise HTTPException(status_code=404, detail="Upload expiré ou introuvable. Renvoie ta vidéo.")
+    path = matches[0]
+    return path, path.name
+
+
+class VideoAnalyzeRequest(BaseModel):
+    upload_id: str = Field(min_length=8, max_length=64)
+    sport: str
+    level: str
+    description: str = ""
+    trick: str = ""
+    problem: str = ""
+    conditions: str = ""
+
+
+async def _run_video_analysis_for_user(
+    user: dict,
+    path: Path,
+    video_filename: str,
+    *,
+    sport_key: str,
+    level: str,
+    trick_text: str,
+    problem_text: str,
+    conditions_text: str,
+    description_saved: str,
+    duration_sec: float,
+):
+    import asyncio
+    from video_frames import extract_video_frames
+    from gpt_vision import analyze_session_video, get_active_vision_model, parse_structured_json
+    from video_analysis_prompts import (
+        build_rider_context,
+        kitesurf_problem_label,
+        kitesurf_trick_label,
+        video_analysis_system_prompt,
+    )
 
     try:
         frame_list = await asyncio.to_thread(extract_video_frames, path)
@@ -982,7 +1005,6 @@ async def video_analysis(
                 + (f"\nContexte : {conditions_text}" if conditions_text else "")
             )
 
-    # Reject off-topic or non-sport videos
     if structured.get("video_valide") is False:
         path.unlink(missing_ok=True)
         reason = (structured.get("raison_rejet") or "").strip()
@@ -1016,6 +1038,142 @@ async def video_analysis(
     await db.video_analyses.insert_one(record)
     record.pop("_id", None)
     return record
+
+
+def _video_form_metadata(
+    sport: str,
+    level: str,
+    description: str,
+    trick: str,
+    problem: str,
+    conditions: str,
+) -> tuple[str, str, str, str, str, str]:
+    from video_analysis_prompts import SUPPORTED_SPORTS
+
+    sport_key = (sport or "").lower().strip()
+    if sport_key not in SUPPORTED_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Sport non supporté. Choisis : {', '.join(SUPPORTED_SPORTS)}.",
+        )
+
+    trick_text = (trick or "").strip()
+    problem_text = (problem or "").strip()
+    conditions_text = (conditions or "").strip()
+    legacy_desc = (description or "").strip()
+
+    if not trick_text and legacy_desc:
+        trick_text = legacy_desc
+    if not problem_text and legacy_desc and not trick:
+        problem_text = legacy_desc
+
+    if trick_text and problem_text:
+        description_saved = (
+            f"Figure : {trick_text}\nProblème : {problem_text}"
+            + (f"\nContexte : {conditions_text}" if conditions_text else "")
+        )
+    elif trick_text or problem_text:
+        parts = []
+        if trick_text:
+            parts.append(f"Figure : {trick_text}")
+        if problem_text:
+            parts.append(f"Problème : {problem_text}")
+        if conditions_text:
+            parts.append(f"Contexte : {conditions_text}")
+        description_saved = "\n".join(parts)
+    else:
+        description_saved = (
+            "Auto-détection (figure et problème identifiés par l'IA)"
+            + (f"\nContexte : {conditions_text}" if conditions_text else "")
+        )
+
+    return sport_key, trick_text, problem_text, conditions_text, description_saved, level
+
+
+@api.post("/video-analysis/upload")
+async def video_analysis_upload(request: Request, video: UploadFile = File(...)):
+    """Upload video only — use /video-analysis/analyze next (direct Railway URL in prod)."""
+    await require_active_plan(request)
+    path, upload_id, duration_sec = await _save_video_upload(video)
+    return {
+        "upload_id": upload_id,
+        "duration_sec": duration_sec,
+        "filename": path.name,
+    }
+
+
+@api.post("/video-analysis/analyze")
+async def video_analysis_analyze(payload: VideoAnalyzeRequest, request: Request):
+    user = await require_active_plan(request)
+    path, filename = _resolve_pending_upload(payload.upload_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Fichier vidéo introuvable. Renvoie ta vidéo.")
+
+    sport_key, trick_text, problem_text, conditions_text, description_saved, level = _video_form_metadata(
+        payload.sport,
+        payload.level,
+        payload.description,
+        payload.trick,
+        payload.problem,
+        payload.conditions,
+    )
+
+    import asyncio
+    from video_frames import get_video_duration_seconds
+
+    duration_sec = await asyncio.to_thread(get_video_duration_seconds, path)
+
+    try:
+        return await _run_video_analysis_for_user(
+            user,
+            path,
+            filename,
+            sport_key=sport_key,
+            level=level,
+            trick_text=trick_text,
+            problem_text=problem_text,
+            conditions_text=conditions_text,
+            description_saved=description_saved,
+            duration_sec=duration_sec,
+        )
+    finally:
+        path.unlink(missing_ok=True)
+
+
+@api.post("/video-analysis")
+async def video_analysis(
+    request: Request,
+    sport: str = Form(...),
+    level: str = Form(...),
+    description: str = Form(""),
+    trick: str = Form(""),
+    problem: str = Form(""),
+    conditions: str = Form(""),
+    video: UploadFile = File(...),
+):
+    """Legacy single-shot upload+analyze (local dev). Production uses upload + analyze."""
+    user = await require_active_plan(request)
+    sport_key, trick_text, problem_text, conditions_text, description_saved, level = _video_form_metadata(
+        sport, level, description, trick, problem, conditions,
+    )
+    path, upload_id, duration_sec = await _save_video_upload(video)
+    _pending_uploads.pop(upload_id, None)
+    try:
+        return await _run_video_analysis_for_user(
+            user,
+            path,
+            path.name,
+            sport_key=sport_key,
+            level=level,
+            trick_text=trick_text,
+            problem_text=problem_text,
+            conditions_text=conditions_text,
+            description_saved=description_saved,
+            duration_sec=duration_sec,
+        )
+    finally:
+        path.unlink(missing_ok=True)
+
 
 @api.get("/video-analysis/history")
 async def video_history(request: Request):

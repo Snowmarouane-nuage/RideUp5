@@ -14,9 +14,9 @@ from PIL import Image
 
 logger = logging.getLogger("ridemind")
 
-MAX_FRAMES = int(os.environ.get("VIDEO_ANALYSIS_MAX_FRAMES", "48"))
-MAX_EDGE_PX = int(os.environ.get("VIDEO_ANALYSIS_MAX_EDGE_PX", "1280"))
-JPEG_QUALITY = int(os.environ.get("VIDEO_ANALYSIS_JPEG_QUALITY", "88"))
+MAX_FRAMES = int(os.environ.get("VIDEO_ANALYSIS_MAX_FRAMES", "96"))
+MAX_EDGE_PX = int(os.environ.get("VIDEO_ANALYSIS_MAX_EDGE_PX", "1024"))
+JPEG_QUALITY = int(os.environ.get("VIDEO_ANALYSIS_JPEG_QUALITY", "85"))
 MAX_DURATION_SECONDS = 20
 
 # Motion scan: sample ~1 frame every MOTION_SCAN_INTERVAL source frames (cap ~500 scans)

@@ -5,7 +5,8 @@
   "build": {
     "env": {
       "DISABLE_ESLINT_PLUGIN": "true",
-      "REACT_APP_SITE_URL": "https://ride-up5-swhv.vercel.app"
+      "REACT_APP_SITE_URL": "https://ride-up5-swhv.vercel.app",
+      "REACT_APP_DIRECT_API_URL": "https://rideup5-production.up.railway.app"
     }
   },
   "rewrites": [

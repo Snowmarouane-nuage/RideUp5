@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
+import { api, fetchUploadConfig, createDirectApiClient, formatApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
 import { Upload, Sparkles, Target, Dumbbell, ShieldCheck, Award, ListChecks, Wind } from "lucide-react";
@@ -36,6 +36,7 @@ export default function VideoAnalysis() {
   const [videoDuration, setVideoDuration] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadPct, setUploadPct] = useState(null);
+  const [phase, setPhase] = useState(null); // "upload" | "analyze"
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
@@ -61,32 +62,49 @@ export default function VideoAnalysis() {
     }
     setLoading(true);
     setUploadPct(null);
+    setPhase(null);
     setResult(null);
     try {
+      const uploadConfig = await fetchUploadConfig();
+      const direct = createDirectApiClient(uploadConfig);
+
       const fd = new FormData();
-      fd.append("sport", sport);
-      fd.append("level", level);
-      fd.append("trick", trick.trim());
-      fd.append("problem", problem.trim());
-      fd.append("conditions", conditions.trim());
-      if (file) fd.append("video", file);
-      const r = await api.post("/video-analysis", fd, {
+      fd.append("video", file);
+
+      setPhase("upload");
+      const uploadRes = await direct.post("/video-analysis/upload", fd, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 320000,
+        timeout: 600000,
         onUploadProgress: (evt) => {
           if (evt.total) {
             setUploadPct(Math.round((evt.loaded * 100) / evt.total));
           }
         },
       });
+
+      setUploadPct(100);
+      setPhase("analyze");
+      const r = await direct.post(
+        "/video-analysis/analyze",
+        {
+          upload_id: uploadRes.data.upload_id,
+          sport,
+          level,
+          trick: trick.trim(),
+          problem: problem.trim(),
+          conditions: conditions.trim(),
+        },
+        { timeout: 600000 },
+      );
       setResult(r.data);
       const h = await api.get("/video-analysis/history");
       setHistory(h.data);
     } catch (err) {
-      setError(err.response?.data?.detail || "Erreur lors de l'analyse");
+      setError(formatApiError(err));
     } finally {
       setLoading(false);
       setUploadPct(null);
+      setPhase(null);
     }
   };
 
@@ -97,7 +115,7 @@ export default function VideoAnalysis() {
         <div className="text-[#9AB8FF] font-display text-xs tracking-[0.3em] mb-2">COACHING IA</div>
         <h1 className="font-display text-4xl md:text-6xl mb-3">ANALYSE <span className="text-[#9AB8FF]">VIDÉO KITESURF</span></h1>
         <p className="text-gray-400 mb-10 max-w-2xl">
-          Analyse expert sur <span className="text-white">48+ images</span> par clip, concentrées autour du décollage et de la réception.
+          Analyse expert sur <span className="text-white">96 images</span> par clip, concentrées autour du décollage et de la réception.
           Modèle vision <span className="text-white">GPT-4.1</span> (fallback GPT-4o). Aucune supposition.
         </p>
 
@@ -227,9 +245,11 @@ export default function VideoAnalysis() {
                 <div className="h-12 w-12 mx-auto rounded-full border-4 border-[#9AB8FF] border-t-transparent animate-spin mb-4" />
                 <div className="text-gray-300 font-display tracking-wider">L&apos;AGENT RIDE’UP ANALYSE TA SESSION...</div>
                 <div className="text-gray-400 text-sm mt-2">
-                  {uploadPct !== null && uploadPct < 100
+                  {phase === "upload" && uploadPct !== null
                     ? `Envoi de la vidéo… ${uploadPct}%`
-                    : "Extraction des images et analyse IA — compte 1 à 2 minutes"}
+                    : phase === "analyze"
+                      ? "Extraction de 96 images et analyse IA en 2 passes parallèles — compte 1 à 3 minutes"
+                      : "Préparation…"}
                 </div>
               </div>
             )}

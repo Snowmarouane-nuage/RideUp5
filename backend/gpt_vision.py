@@ -1,6 +1,7 @@
 """GPT vision analysis for ride session videos."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -14,7 +15,8 @@ DEFAULT_VISION_MODEL = os.environ.get("VIDEO_ANALYSIS_GPT_MODEL") or "gpt-4.1"
 FALLBACK_VISION_MODEL = os.environ.get("VIDEO_ANALYSIS_GPT_MODEL_FALLBACK", "gpt-4o")
 MAX_TOKENS = int(os.environ.get("VIDEO_ANALYSIS_MAX_TOKENS", "6000"))
 FRAME_IMAGE_DETAIL = os.environ.get("VIDEO_ANALYSIS_IMAGE_DETAIL", "auto")
-API_TIMEOUT_SEC = float(os.environ.get("VIDEO_ANALYSIS_API_TIMEOUT", "300"))
+API_TIMEOUT_SEC = float(os.environ.get("VIDEO_ANALYSIS_API_TIMEOUT", "600"))
+VISION_BATCH_SIZE = int(os.environ.get("VIDEO_ANALYSIS_BATCH_SIZE", "48"))
 _PLACEHOLDER_MARKERS = ("replace_me", "sk-replace", "your_key", "xxx", "...")
 
 _resolved_model: Optional[str] = None
@@ -195,7 +197,10 @@ async def _call_openai_http(
         raise RuntimeError(f"Modèle OpenAI introuvable (404): {model}")
     if resp.status_code != 200:
         logger.error("OpenAI vision error %s: %s", resp.status_code, resp.text[:500])
-        raise RuntimeError(f"Erreur OpenAI API ({resp.status_code})")
+        detail = resp.text[:200]
+        if resp.status_code == 413:
+            raise RuntimeError("Vidéo trop détaillée pour l'API (payload trop lourd). Réessaie avec un clip plus court.")
+        raise RuntimeError(f"Erreur OpenAI API ({resp.status_code}): {detail}")
     data = resp.json()
     return data["choices"][0]["message"]["content"]
 
@@ -272,6 +277,71 @@ def generate_dev_analysis(
     return json.dumps(payload, ensure_ascii=False)
 
 
+_KITESURF_PREDICTION_KEYS = (
+    "stance", "approach", "rotation_degrees", "rotation_direction", "body_rotation",
+    "kiteloop", "downloop", "heliloop", "bar_position", "hands", "grab",
+    "board_off", "one_foot", "kite_position", "landing",
+)
+
+
+def _prediction_confidence(field) -> int:
+    if isinstance(field, dict):
+        try:
+            return int(field.get("confidence") or 0)
+        except (TypeError, ValueError):
+            return 0
+    return 0
+
+
+def _merge_kitesurf_batches(payloads: List[dict]) -> dict:
+    if not payloads:
+        return {}
+    if len(payloads) == 1:
+        return payloads[0]
+
+    merged = {
+        "video_valide": any(p.get("video_valide") for p in payloads),
+        "raison_rejet": "",
+        "frames_analyzed": sum(int(p.get("frames_analyzed") or 0) for p in payloads),
+    }
+    if not merged["video_valide"]:
+        for p in payloads:
+            reason = (p.get("raison_rejet") or "").strip()
+            if reason:
+                merged["raison_rejet"] = reason
+                break
+
+    for key in _KITESURF_PREDICTION_KEYS:
+        best = None
+        best_conf = -1
+        for p in payloads:
+            field = p.get(key)
+            conf = _prediction_confidence(field)
+            if conf > best_conf:
+                best_conf = conf
+                best = field
+        merged[key] = best or {"prediction": "Impossible à déterminer", "confidence": 0, "alternatives": []}
+
+    exec_merged = {}
+    for sub in ("height", "amplitude", "control", "timing"):
+        best_val = "Impossible à déterminer"
+        for p in payloads:
+            ex = p.get("execution") or {}
+            val = (ex.get(sub) or "").strip()
+            if val and val != "Impossible à déterminer":
+                best_val = val
+                break
+        exec_merged[sub] = best_val
+    merged["execution"] = exec_merged
+    return merged
+
+
+def _chunk_frames(frames: List[dict], size: int) -> List[List[dict]]:
+    if size <= 0 or len(frames) <= size:
+        return [frames]
+    return [frames[i : i + size] for i in range(0, len(frames), size)]
+
+
 async def analyze_session_video(
     system_prompt: str,
     user_text: str,
@@ -293,13 +363,58 @@ async def analyze_session_video(
         logger.warning("OpenAI non configuré — analyse vidéo en mode démo")
         return generate_dev_analysis(sport, level, trick, problem, len(normalized))
 
+    sport_key = (sport or "kitesurf").lower().strip()
+    batches = _chunk_frames(normalized, VISION_BATCH_SIZE)
+
     try:
-        return await _call_openai_http(system_prompt, user_text, normalized, sport=sport)
+        if len(batches) == 1:
+            return await _call_openai_http(system_prompt, user_text, normalized, sport=sport)
+
+        logger.info("Parallel vision: %d batches of up to %d frames", len(batches), VISION_BATCH_SIZE)
+        tasks = []
+        for i, batch in enumerate(batches):
+            batch_text = (
+                user_text
+                + f"\n\n=== SEGMENT {i + 1}/{len(batches)} ({len(batch)} images) ===\n"
+                + "Analyse uniquement ce segment chronologique. "
+                + "Si un élément n'est pas visible dans ce segment, mets confidence 0."
+            )
+            tasks.append(_call_openai_http(system_prompt, batch_text, batch, sport=sport))
+
+        responses = await asyncio.gather(*tasks)
+        partials = []
+        for raw in responses:
+            cleaned = raw.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
+                if cleaned.rstrip().endswith("```"):
+                    cleaned = cleaned.rstrip()[:-3]
+            partials.append(json.loads(cleaned))
+
+        if sport_key == "kitesurf":
+            merged = _merge_kitesurf_batches(partials)
+            merged["frames_analyzed"] = len(normalized)
+            return json.dumps(merged, ensure_ascii=False)
+
+        # Non-kitesurf: concatenate diagnostics from batches
+        combined = partials[0]
+        for p in partials[1:]:
+            for key in ("diagnostic", "corrections", "drills"):
+                if p.get(key):
+                    if isinstance(combined.get(key), list) and isinstance(p.get(key), list):
+                        combined[key] = combined.get(key, []) + p[key]
+                    elif isinstance(combined.get(key), str) and isinstance(p.get(key), str):
+                        combined[key] = f"{combined[key]}\n\n{p[key]}"
+        combined["frames_analyzed"] = len(normalized)
+        return json.dumps(combined, ensure_ascii=False)
     except RuntimeError as exc:
         if dev_fallback and "Quota OpenAI" in str(exc):
             logger.warning("Quota OpenAI — mode démo: %s", exc)
             return generate_dev_analysis(sport, level, trick, problem, len(normalized))
         raise
+    except json.JSONDecodeError as exc:
+        logger.exception("Failed to parse batched vision JSON")
+        raise RuntimeError(f"Réponse IA illisible après analyse par segments: {exc}") from exc
 
 
 def parse_structured_json(ai_response: str, fallback_level: str) -> dict:
