@@ -541,8 +541,8 @@ async def stripe_health():
             "mode": mode,
             "ok": True,
             "webhook_secret_set": bool(os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()),
-            "charges_enabled": bool(acct.get("charges_enabled")),
-            "details_submitted": bool(acct.get("details_submitted")),
+            "charges_enabled": bool(billing.stripe_field(acct, "charges_enabled")),
+            "details_submitted": bool(billing.stripe_field(acct, "details_submitted")),
         }
     except StripeError as e:
         return {
@@ -663,6 +663,9 @@ async def checkout_status(session_id: str, request: Request):
         status = await billing.get_checkout_status(session_id)
     except StripeError as e:
         raise HTTPException(status_code=502, detail=f"Stripe: {e.user_message or str(e)}")
+    except Exception as e:
+        logger.exception("checkout status failed for %s", session_id)
+        raise HTTPException(status_code=502, detail=f"Checkout status error: {e}")
 
     if status.payment_status == "paid" and tx["payment_status"] != "paid":
         await _apply_subscription(

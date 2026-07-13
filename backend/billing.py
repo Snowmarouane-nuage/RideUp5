@@ -19,6 +19,18 @@ logger = logging.getLogger("ridemind")
 def refresh_stripe_api_key() -> None:
     stripe.api_key = (os.environ.get("STRIPE_API_KEY") or "").strip()
 
+
+def stripe_field(obj: Any, key: str, default: Any = None) -> Any:
+    """Read a field from Stripe SDK objects or plain dicts."""
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    try:
+        return obj[key]
+    except Exception:
+        return getattr(obj, key, default)
+
 PLAN_PRICES = {
     "standard": {"amount_cents": 999, "name": "RIDE'UP Standard"},
     "premium": {"amount_cents": 1599, "name": "RIDE'UP Premium"},
@@ -127,16 +139,15 @@ async def get_checkout_status(session_id: str) -> CheckoutStatusResult:
 
     session = await asyncio.to_thread(_get)
     sub = session.subscription
-    sub_id = sub.id if sub and hasattr(sub, "id") else session.get("subscription")
-    plan = (session.metadata or {}).get("plan")
-    period_end = None
-    if sub and hasattr(sub, "current_period_end"):
-        period_end = sub.current_period_end
+    sub_id = stripe_field(sub, "id") or stripe_field(session, "subscription")
+    plan = stripe_field(session.metadata, "plan")
+    period_end = stripe_field(sub, "current_period_end")
+    customer_id = stripe_field(session, "customer")
     return CheckoutStatusResult(
-        status=session.status or "open",
-        payment_status=session.payment_status or "unpaid",
-        subscription_id=sub_id if isinstance(sub_id, str) else getattr(sub_id, "id", None),
-        customer_id=session.customer if isinstance(session.customer, str) else getattr(session.customer, "id", None),
+        status=stripe_field(session, "status", "open") or "open",
+        payment_status=stripe_field(session, "payment_status", "unpaid") or "unpaid",
+        subscription_id=sub_id if isinstance(sub_id, str) else stripe_field(sub_id, "id"),
+        customer_id=customer_id if isinstance(customer_id, str) else stripe_field(customer_id, "id"),
         plan=plan,
         period_end=period_end,
     )
@@ -186,37 +197,37 @@ async def parse_webhook(body: bytes, signature: str) -> Optional[Dict[str, Any]]
     obj = event["data"]["object"]
 
     if etype == "checkout.session.completed":
-        if obj.get("mode") != "subscription":
+        if stripe_field(obj, "mode") != "subscription":
             return None
-        meta = obj.get("metadata") or {}
+        meta = stripe_field(obj, "metadata") or {}
         return {
             "kind": "checkout_completed",
-            "user_id": meta.get("user_id") or obj.get("client_reference_id"),
-            "plan": meta.get("plan"),
-            "subscription_id": obj.get("subscription"),
-            "customer_id": obj.get("customer"),
-            "session_id": obj.get("id"),
+            "user_id": stripe_field(meta, "user_id") or stripe_field(obj, "client_reference_id"),
+            "plan": stripe_field(meta, "plan"),
+            "subscription_id": stripe_field(obj, "subscription"),
+            "customer_id": stripe_field(obj, "customer"),
+            "session_id": stripe_field(obj, "id"),
         }
 
     if etype in ("customer.subscription.updated", "customer.subscription.created"):
-        meta = obj.get("metadata") or {}
+        meta = stripe_field(obj, "metadata") or {}
         return {
             "kind": "subscription_updated",
-            "user_id": meta.get("user_id"),
-            "plan": meta.get("plan"),
-            "subscription_id": obj.get("id"),
-            "customer_id": obj.get("customer"),
-            "status": obj.get("status"),
-            "period_end": obj.get("current_period_end"),
+            "user_id": stripe_field(meta, "user_id"),
+            "plan": stripe_field(meta, "plan"),
+            "subscription_id": stripe_field(obj, "id"),
+            "customer_id": stripe_field(obj, "customer"),
+            "status": stripe_field(obj, "status"),
+            "period_end": stripe_field(obj, "current_period_end"),
         }
 
     if etype == "customer.subscription.deleted":
-        meta = obj.get("metadata") or {}
+        meta = stripe_field(obj, "metadata") or {}
         return {
             "kind": "subscription_deleted",
-            "user_id": meta.get("user_id"),
-            "subscription_id": obj.get("id"),
-            "customer_id": obj.get("customer"),
+            "user_id": stripe_field(meta, "user_id"),
+            "subscription_id": stripe_field(obj, "id"),
+            "customer_id": stripe_field(obj, "customer"),
         }
 
     return None

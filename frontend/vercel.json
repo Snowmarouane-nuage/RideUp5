@@ -10,6 +10,14 @@
   },
   "rewrites": [
     {
+      "source": "/api",
+      "destination": "https://rideup5-production.up.railway.app/api"
+    },
+    {
+      "source": "/api/",
+      "destination": "https://rideup5-production.up.railway.app/api/"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://rideup5-production.up.railway.app/api/:path*"
     },

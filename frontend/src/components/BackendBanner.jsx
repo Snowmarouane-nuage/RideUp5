@@ -13,7 +13,12 @@ export function BackendBanner() {
     const check = async () => {
       try {
         const r = await fetch(`${BACKEND_URL}/api/`, { credentials: "include" });
-        if (!cancelled) setOffline(!r.ok);
+        if (!r.ok) {
+          if (!cancelled) setOffline(true);
+          return;
+        }
+        const data = await r.json();
+        if (!cancelled) setOffline(!(data && data.status === "ok"));
       } catch {
         if (!cancelled) setOffline(true);
       }
