@@ -1,4 +1,13 @@
 {
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "build": {
+    "env": {
+      "DISABLE_ESLINT_PLUGIN": "true",
+      "REACT_APP_SITE_URL": "https://ride-up5-swhv.vercel.app"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
