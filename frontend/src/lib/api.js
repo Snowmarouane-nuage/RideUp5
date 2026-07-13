@@ -146,7 +146,7 @@ export async function uploadVideoChunked(file, fields, { onProgress } = {}) {
 const JOB_PROGRESS_LABELS = {
   uploaded: "Vidéo reçue — préparation de l'analyse…",
   extracting_frames: "Extraction des 96 images de ton clip…",
-  analyzing: "Analyse IA en cours (1 à 3 minutes) — ne ferme pas la page",
+  analyzing: "Analyse IA en cours (1 à 5 min) — OpenAI peut ralentir, ne ferme pas la page",
   saving: "Finalisation du rapport…",
   done: "Terminé",
 };
@@ -156,7 +156,7 @@ export function jobProgressLabel(progress) {
 }
 
 /** Poll a background analysis job until completed or failed. */
-export async function pollAnalysisJob(directClient, jobId, { onProgress, intervalMs = 3000, maxAttempts = 200 } = {}) {
+export async function pollAnalysisJob(directClient, jobId, { onProgress, intervalMs = 3000, maxAttempts = 400 } = {}) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const r = await directClient.get(`/video-analysis/jobs/${jobId}`, { timeout: 45000 });
     const { status, progress, error, result } = r.data;

@@ -17,9 +17,12 @@ MAX_TOKENS = int(os.environ.get("VIDEO_ANALYSIS_MAX_TOKENS", "6000"))
 FRAME_IMAGE_DETAIL = os.environ.get("VIDEO_ANALYSIS_IMAGE_DETAIL", "auto")
 API_TIMEOUT_SEC = float(os.environ.get("VIDEO_ANALYSIS_API_TIMEOUT", "600"))
 VISION_BATCH_SIZE = int(os.environ.get("VIDEO_ANALYSIS_BATCH_SIZE", "48"))
+VISION_BATCH_DELAY_SEC = float(os.environ.get("VIDEO_ANALYSIS_BATCH_DELAY_SEC", "4"))
+VISION_429_MAX_RETRIES = int(os.environ.get("VIDEO_ANALYSIS_429_MAX_RETRIES", "6"))
 _PLACEHOLDER_MARKERS = ("replace_me", "sk-replace", "your_key", "xxx", "...")
 
 _resolved_model: Optional[str] = None
+_vision_api_lock = asyncio.Lock()
 
 VISION_SEQUENCE_RULE = (
     "Analyse l'ensemble des images avant de conclure. Ne prends jamais une décision à partir "
@@ -129,6 +132,16 @@ def _build_user_content(
     return content
 
 
+def _retry_after_seconds(resp: httpx.Response, attempt: int) -> float:
+    raw = resp.headers.get("retry-after") or resp.headers.get("Retry-After")
+    if raw:
+        try:
+            return max(1.0, float(raw))
+        except ValueError:
+            pass
+    return min(90.0, (2 ** attempt) + 2.0)
+
+
 async def _call_openai_http(
     system_prompt: str,
     user_text: str,
@@ -164,45 +177,67 @@ async def _call_openai_http(
         "temperature": 0.1,
         "response_format": {"type": "json_object"},
     }
-    async with httpx.AsyncClient(timeout=API_TIMEOUT_SEC) as client:
-        resp = await client.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {_openai_api_key()}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        )
-    if resp.status_code == 401:
-        raise RuntimeError("Clé OpenAI refusée (401). Vérifie OPENAI_API_KEY dans backend/.env.")
-    if resp.status_code == 429:
-        try:
-            err_type = resp.json().get("error", {}).get("type", "")
-        except Exception:
-            err_type = ""
-        if err_type == "insufficient_quota":
+
+    last_error = "Trop de requêtes OpenAI (429). Réessaie dans 2–3 minutes."
+    for attempt in range(VISION_429_MAX_RETRIES):
+        async with _vision_api_lock:
+            async with httpx.AsyncClient(timeout=API_TIMEOUT_SEC) as client:
+                resp = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {_openai_api_key()}",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                )
+
+        if resp.status_code == 401:
+            raise RuntimeError("Clé OpenAI refusée (401). Vérifie OPENAI_API_KEY dans backend/.env.")
+        if resp.status_code == 429:
+            try:
+                err_type = resp.json().get("error", {}).get("type", "")
+            except Exception:
+                err_type = ""
+            if err_type == "insufficient_quota":
+                raise RuntimeError(
+                    "Quota OpenAI épuisé. Ajoute du crédit sur "
+                    "https://platform.openai.com/account/billing."
+                )
+            wait = _retry_after_seconds(resp, attempt)
+            last_error = (
+                f"OpenAI temporairement saturé (429). Nouvelle tentative automatique "
+                f"({attempt + 1}/{VISION_429_MAX_RETRIES})…"
+            )
+            logger.warning("OpenAI 429 on vision call, retry in %.0fs (attempt %d)", wait, attempt + 1)
+            if attempt < VISION_429_MAX_RETRIES - 1:
+                await asyncio.sleep(wait)
+                continue
             raise RuntimeError(
-                "Quota OpenAI épuisé. Ajoute du crédit sur "
-                "https://platform.openai.com/account/billing."
+                "OpenAI est saturé (limite de requêtes). Attends 2–3 minutes et relance l'analyse — "
+                "ta vidéo est bien enregistrée."
             )
-        raise RuntimeError("Trop de requêtes OpenAI (429). Réessaie dans quelques minutes.")
-    if resp.status_code == 404:
-        if model != FALLBACK_VISION_MODEL:
-            global _resolved_model
-            logger.warning("Model %s unavailable (404), falling back to %s", model, FALLBACK_VISION_MODEL)
-            _resolved_model = FALLBACK_VISION_MODEL
-            return await _call_openai_http(
-                system_prompt, user_text, frames, sport=sport, model_override=FALLBACK_VISION_MODEL
-            )
-        raise RuntimeError(f"Modèle OpenAI introuvable (404): {model}")
-    if resp.status_code != 200:
-        logger.error("OpenAI vision error %s: %s", resp.status_code, resp.text[:500])
-        detail = resp.text[:200]
-        if resp.status_code == 413:
-            raise RuntimeError("Vidéo trop détaillée pour l'API (payload trop lourd). Réessaie avec un clip plus court.")
-        raise RuntimeError(f"Erreur OpenAI API ({resp.status_code}): {detail}")
-    data = resp.json()
-    return data["choices"][0]["message"]["content"]
+        if resp.status_code == 404:
+            if model != FALLBACK_VISION_MODEL:
+                global _resolved_model
+                logger.warning("Model %s unavailable (404), falling back to %s", model, FALLBACK_VISION_MODEL)
+                _resolved_model = FALLBACK_VISION_MODEL
+                return await _call_openai_http(
+                    system_prompt, user_text, frames, sport=sport, model_override=FALLBACK_VISION_MODEL
+                )
+            raise RuntimeError(f"Modèle OpenAI introuvable (404): {model}")
+        if resp.status_code != 200:
+            logger.error("OpenAI vision error %s: %s", resp.status_code, resp.text[:500])
+            detail = resp.text[:200]
+            if resp.status_code == 413:
+                raise RuntimeError(
+                    "Vidéo trop détaillée pour l'API (payload trop lourd). Réessaie avec un clip plus court."
+                )
+            raise RuntimeError(f"Erreur OpenAI API ({resp.status_code}): {detail}")
+
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+
+    raise RuntimeError(last_error)
 
 
 def get_active_vision_model() -> str:
@@ -371,28 +406,24 @@ async def _analyze_batched(
     if len(batches) == 1:
         return await _call_openai_http(system_prompt, user_text, normalized, sport=sport)
 
-    logger.info("Parallel vision: %d batches of up to %d frames", len(batches), VISION_BATCH_SIZE)
-    tasks = []
+    logger.info("Sequential vision: %d batches of up to %d frames", len(batches), VISION_BATCH_SIZE)
+    partials: List[dict] = []
+    errors: List[str] = []
     for i, batch in enumerate(batches):
+        if i > 0 and VISION_BATCH_DELAY_SEC > 0:
+            await asyncio.sleep(VISION_BATCH_DELAY_SEC)
         batch_text = (
             user_text
             + f"\n\n=== SEGMENT {i + 1}/{len(batches)} ({len(batch)} images) ===\n"
             + "Analyse uniquement ce segment chronologique. "
             + "Si un élément n'est pas visible dans ce segment, mets confidence 0."
         )
-        tasks.append(_call_openai_http(system_prompt, batch_text, batch, sport=sport))
-
-    responses = await asyncio.gather(*tasks, return_exceptions=True)
-    partials: List[dict] = []
-    errors: List[str] = []
-    for i, raw in enumerate(responses):
-        if isinstance(raw, Exception):
-            errors.append(f"segment {i + 1}: {raw}")
-            continue
         try:
+            raw = await _call_openai_http(system_prompt, batch_text, batch, sport=sport)
             partials.append(_extract_json_object(raw))
-        except json.JSONDecodeError as exc:
-            errors.append(f"segment {i + 1} JSON: {exc}")
+        except Exception as exc:
+            errors.append(f"segment {i + 1}: {exc}")
+            logger.warning("Vision segment %d failed: %s", i + 1, exc)
 
     if not partials:
         logger.warning("Batched vision failed (%s) — fallback single pass", "; ".join(errors))
