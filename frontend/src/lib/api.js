@@ -68,7 +68,16 @@ export function formatApiError(err) {
     return "L'analyse a pris trop de temps. Réessaie avec un clip plus court (max 20 s).";
   }
   if (err.message === "Network Error") {
-    return "Connexion interrompue pendant l'envoi. Réessaie — si le problème persiste, utilise un clip plus léger.";
+    return (
+      "Connexion interrompue. Vérifie ta connexion et réessaie. "
+      + "Si le problème persiste, utilise un clip plus court (< 20 s, < 30 Mo)."
+    );
+  }
+  if (err.response?.status === 401) {
+    return "Session expirée — reconnecte-toi puis réessaie l'analyse.";
+  }
+  if (err.response?.status === 402 || err.response?.status === 403) {
+    return "Abonnement requis pour l'analyse vidéo. Vérifie ton plan ou ADMIN_EMAILS sur Railway.";
   }
   return err.message || "Erreur lors de l'analyse";
 }

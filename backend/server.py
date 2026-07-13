@@ -844,10 +844,18 @@ async def auth_upload_config(request: Request):
     token = _session_token_from_request(request)
     if not token:
         raise HTTPException(status_code=401, detail="Session requise")
+    from gpt_vision import openai_configured, get_active_vision_model
+
     direct = os.environ.get("PUBLIC_API_URL", "").strip().rstrip("/")
     if not direct:
-        direct = str(request.base_url).rstrip("/")
-    return {"direct_api_url": direct, "session_token": token}
+        # Never use request.base_url — behind Vercel proxy it can point back to the frontend.
+        direct = "https://rideup5-production.up.railway.app"
+    return {
+        "direct_api_url": direct,
+        "session_token": token,
+        "vision_ready": openai_configured(),
+        "vision_model": get_active_vision_model(),
+    }
 
 
 async def _save_video_upload(video: UploadFile) -> tuple[Path, str, int]:
@@ -1092,7 +1100,7 @@ def _video_form_metadata(
 
 @api.post("/video-analysis/upload")
 async def video_analysis_upload(request: Request, video: UploadFile = File(...)):
-    """Upload video only — use /video-analysis/analyze next (direct Railway URL in prod)."""
+    """Upload video only — prefer single-shot /video-analysis on direct Railway URL."""
     await require_active_plan(request)
     path, upload_id, duration_sec = await _save_video_upload(video)
     return {

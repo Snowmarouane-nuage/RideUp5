@@ -66,36 +66,36 @@ export default function VideoAnalysis() {
     setResult(null);
     try {
       const uploadConfig = await fetchUploadConfig();
+      if (uploadConfig.vision_ready === false) {
+        setError(
+          "Analyse IA indisponible : OPENAI_API_KEY manquant sur le serveur. "
+          + "Ajoute ta clé OpenAI dans Railway → Variables, puis redéploie.",
+        );
+        return;
+      }
+
       const direct = createDirectApiClient(uploadConfig);
 
       const fd = new FormData();
+      fd.append("sport", sport);
+      fd.append("level", level);
+      fd.append("trick", trick.trim());
+      fd.append("problem", problem.trim());
+      fd.append("conditions", conditions.trim());
       fd.append("video", file);
 
       setPhase("upload");
-      const uploadRes = await direct.post("/video-analysis/upload", fd, {
+      const r = await direct.post("/video-analysis", fd, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 600000,
         onUploadProgress: (evt) => {
           if (evt.total) {
-            setUploadPct(Math.round((evt.loaded * 100) / evt.total));
+            const pct = Math.round((evt.loaded * 100) / evt.total);
+            setUploadPct(pct);
+            if (pct >= 100) setPhase("analyze");
           }
         },
       });
-
-      setUploadPct(100);
-      setPhase("analyze");
-      const r = await direct.post(
-        "/video-analysis/analyze",
-        {
-          upload_id: uploadRes.data.upload_id,
-          sport,
-          level,
-          trick: trick.trim(),
-          problem: problem.trim(),
-          conditions: conditions.trim(),
-        },
-        { timeout: 600000 },
-      );
       setResult(r.data);
       const h = await api.get("/video-analysis/history");
       setHistory(h.data);
