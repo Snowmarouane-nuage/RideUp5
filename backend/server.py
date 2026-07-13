@@ -551,6 +551,14 @@ async def stripe_health():
             "webhook_secret_set": bool(os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()),
             "detail": e.user_message or str(e),
         }
+    except Exception as e:
+        return {
+            "configured": True,
+            "mode": mode,
+            "ok": False,
+            "webhook_secret_set": bool(os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()),
+            "detail": str(e),
+        }
 
 
 @api.post("/checkout/session")
